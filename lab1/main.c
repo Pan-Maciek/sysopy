@@ -1,21 +1,35 @@
 #include "lib.h"
 #include <stdio.h>
 #include <sys/times.h>
+#ifdef dynamic 
+#include <dlfcn.h>
+#endif
 
 static struct tms tms_start, tms_end;
 static clock_t clock_start, clock_end;
 
-#define time_it(name, code_block) {\
+#define time_it(name, code_block)\
   clock_start = times(&tms_start);\
   code_block\
   clock_end = times(&tms_end);\
   printf("\n%s\n", name);\
   printf("real time: %ld\n", clock_end - clock_start);\
   printf(" sys time: %ld\n", tms_end.tms_stime - tms_start.tms_stime);\
-  printf("user time: %ld\n", tms_end.tms_utime - tms_start.tms_utime);\
-}
+  printf("user time: %ld\n", tms_end.tms_utime - tms_start.tms_utime)
 
 int main(int argc, char **argv) {
+
+  #ifdef dynamic
+  void* handle = dlopen("./libdiff.so", RTLD_NOW);
+  if( !handle ) {
+    fprintf(stderr, "dlopen() %s\n", dlerror());
+    exit(1);
+  }
+  table* (*create_table)(int) = dlsym(handle, "create_table");
+  void (*compare_file_sequence)(table*, char**) = dlsym(handle, "compare_file_sequence");
+  void (*remove_block)(table*, int) = dlsym(handle, "remove_block");
+  void (*remove_operation)(table*, int, int) = dlsym(handle, "remove_operation");
+  #endif
 
   table* main_table = NULL;
 
