@@ -1,4 +1,5 @@
 cc = gcc -Wall -std=c11 -g
+opt_lvl = s
 
 all: main_static
 
@@ -21,20 +22,20 @@ main_dynamic: shared_lib
 	$(cc) main.c -o main.out -ldl -D dynamic
 
 main_static_optimized: main.c static_lib
-	$(cc) -c main.c -o build/main.o -Os
+	$(cc) -c main.c -o build/main.o -O$(opt_lvl)
 	$(cc) build/main.o build/lib.a -o main.out
 
 main_shared_optimized: shared_lib
-	$(cc) main.c -L. -o main.out -ldiff -Wl,-rpath=. -Os
+	$(cc) main.c -L. -o main.out -ldiff -Wl,-rpath=. -O$(opt_lvl)
 
 main_dynamic_optimized: shared_lib
-	$(cc) main.c -o main.out -ldl -D dynamic -Os
+	$(cc) main.c -o main.out -ldl -D dynamic -O$(opt_lvl)
 
 clean:
 	rm build/* *.out *.so *.o *.a
 
-test: main
-	echo  >> raport.txt
+test:
+	echo > raport.txt
 	echo "5 par" >> raport.txt
 	./main.out create_table 5 compare_pairs a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt | tail -4 >> raport.txt
 
@@ -76,106 +77,56 @@ test: main
 	echo >> raport.txt
 	echo "500 par" >> raport.txt
 	./main.out create_table 500 compare_pairs \
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
-		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
+		a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt a.txt:b.txt b.txt:a.txt a.txt:a.txt b.txt:b.txt a.txt:b.txt\
 		| tail -4 >> raport.txt
 
 	echo >> raport.txt
