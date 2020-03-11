@@ -39,9 +39,7 @@ int main(int argc, char **argv) {
     if(strcmp(arg, "create_table") == 0) {
       if (main_table) free(main_table);
       int size = atoi(argv[++i]);
-      time_it("create_table", { 
-        main_table = create_table(size);
-      });
+      main_table = create_table(size);
     }
 
     else if (strcmp(arg, "compare_pairs") == 0) {
