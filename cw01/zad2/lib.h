@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define use(type, var_name, count, code_block){\
-  type var_name = calloc(sizeof(type), count);\
+  type* var_name = calloc(count, sizeof(type));\
   code_block\
   free(var_name);\
 }

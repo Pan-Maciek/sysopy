@@ -19,11 +19,11 @@ static block* create_block(int size) {
 }
 
 block* compare_files(char* file1, char* file2) {
-  // initializing varibles for diff call
-  static const char* pattern = "diff %s %s > /tmp/diffs";
+  // initializing variables for diff call
+  static const char pattern[] = "diff %s %s > /tmp/diffs";
 
-  int size = sizeof(pattern) - 4 + strlen(file1) + strlen(file2) + 1;
-  use(char*, out, size, {
+  int size = sizeof(pattern) + strlen(file1) + strlen(file2);
+  use(char, out, size, {
     sprintf(out, pattern, file1, file2);
     system(out);
   });

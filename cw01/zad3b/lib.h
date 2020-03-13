@@ -6,13 +6,13 @@
 #include <stdio.h>
 
 #define use(type, var_name, count, code_block){\
-  type var_name = calloc(sizeof(type), count);\
+  type* var_name = calloc(count, sizeof(type));\
   code_block\
   free(var_name);\
 }
 
 #define use_malloc(type, var_name, size, code_block){\
-  type var_name = malloc(size);\
+  type* var_name = malloc(size);\
   code_block\
   free(var_name);\
 }
