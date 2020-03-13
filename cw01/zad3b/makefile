@@ -1,13 +1,16 @@
 cc = gcc -Wall -std=c11 -g
-opt_lvl = 3
+opt_lvl = 0
 
 all: main_static
 
-static_lib: lib.c
+dirs:
+	mkdir -p build
+
+static_lib: dirs lib.c
 	$(cc) -c lib.c -o build/lib.o
 	ar rcs build/lib.a build/lib.o
 
-shared_lib:
+shared_lib: dirs lib.c
 	$(cc) -c -fPIC lib.c -o build/lib.o
 	$(cc) -shared -fPIC -o libdiff.so build/lib.o
 
