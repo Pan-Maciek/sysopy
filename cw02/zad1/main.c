@@ -14,7 +14,7 @@ typedef unsigned int uint;
 static char* buffer = 0;
 static uint buffer_size = 0;
 static uint word_size, word_count;
-static const uint new_line_size;
+static const uint new_line_size = 1;
 
 #define min(a, b) a > b ? b : a
 #define max(a, b) a > b ? a : b
@@ -27,7 +27,7 @@ static const uint new_line_size;
 }
 
 #define panic(str, args...) {\
-  fprintf(stderr, "%s:%i ", __func__, __LINE__); \
+  fprintf(stderr, "%s:%i ", __func__, __LINE__);\
   fprintf(stderr, str, args);\
   fprintf(stderr, ".\n");\
   exit(1);\
@@ -46,12 +46,10 @@ void generate(char *file, uint word_size, uint word_count) {
 
   use(char, word_buffer, word_size + 1, {
     word_buffer[word_size] = '\n';
-    for (uint i = 0; i < word_count - 1; i++) {
+    for (uint i = 0; i < word_count; i++) {
       generate_word(word_buffer, word_size);
       write(fd, word_buffer, word_buffer_size);
     }
-    generate_word(word_buffer, word_size);
-    write(fd, word_buffer, word_size);
   });
 
   close(fd);
@@ -121,12 +119,61 @@ void copy_c(char *source, char *target, uint word_count) {
   fclose(out);
 }
 
-void swap_sys(int fd, int low, int high) {
+void swap_sys(int fd, int line1, int line2) {
+  int step_size = word_size + new_line_size;
+  char* buffer1 = malloc(sizeof(char) * word_size);
+  char* buffer2 = malloc(sizeof(char) * word_size);
 
+  if (lseek(fd, line1 * step_size, SEEK_SET) < 0) 
+    panic("Can not seek: %s", strerror(errno));
+  if (read(fd, buffer1, word_size) < 0) 
+    panic("Can not read: %s", strerror(errno));
+
+  if (lseek(fd, line2 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (read(fd, buffer2, word_size) < 0)
+    panic("Can not read: %s", strerror(errno));
+
+  if (lseek(fd, line1 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (write(fd, buffer2, word_size) < 0)
+    panic("Can not write: %s", strerror(errno));
+  
+  if (lseek(fd, line2 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (write(fd, buffer1, word_size) < 0)
+    panic("Can not write: %s", strerror(errno));
+
+  free(buffer1);
+  free(buffer2);
 }
 
-int partition_sys(int fd, int low, int high) {
+int partition_sys(int fd, uint low, uint high) {
+  uint step_size = word_size + new_line_size;
 
+  char* pivot_buffer = malloc(sizeof(char) * word_size);
+  char* buffer = malloc(sizeof(char) * word_size);
+
+  if (lseek(fd, high * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (read(fd, pivot_buffer, word_size) < 0)
+    panic("Can not read: %s", strerror(errno));
+
+  int i = low - 1;
+  for (int j = low; j < high; j++) {
+    if (lseek(fd, j * step_size, SEEK_SET) < 0)
+      panic("Can not seek: %s", strerror(errno));
+    if (read(fd, buffer, word_size) < 0)
+      panic("Can not read: %s", strerror(errno));
+    
+    if (strncmp(buffer, pivot_buffer, word_size) < 0) 
+      swap_sys(fd, ++i, j);
+  }
+  swap_sys(fd, i + 1, high);
+
+  free(pivot_buffer);
+  free(buffer);
+  return i + 1;
 }
 
 void sort_sys_(int fd, int low, int high) {
