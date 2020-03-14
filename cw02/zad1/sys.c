@@ -92,7 +92,6 @@ static int partition_sys(int fd, uint low, uint high) {
 static void sort_sys_(int fd, int low, int high) {
   if (low >= high) return;
   int pivot = partition_sys(fd, low, high);
-  printf("%d\n", pivot);
   sort_sys_(fd, low, pivot - 1);
   sort_sys_(fd, pivot + 1, high);
 }

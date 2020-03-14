@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <sys/times.h>
 
 typedef unsigned int uint;
 
@@ -37,6 +38,18 @@ static const uint new_line_size = 1;
 }
 
 #define arg(i, default) argc <= i ? default : argv[i]
+
+static struct tms tms_start, tms_end;
+static clock_t clock_start, clock_end;
+
+// name, real time, sys time, user time
+#define time_it(name, code_block) {\
+  clock_start = times(&tms_start);\
+  code_block\
+  clock_end = times(&tms_end);\
+  printf("%s, %ld, %ld, %ld\n", name, clock_end - clock_start, tms_end.tms_stime - tms_start.tms_stime, tms_end.tms_utime - tms_start.tms_utime);\
+}
+
 
 void generate_word(char *word_buffer, uint word_size) {
   for (uint i = 0; i < word_size; i++)

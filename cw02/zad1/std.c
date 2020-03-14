@@ -93,7 +93,6 @@ static int partition_c(FILE* file, uint low, uint high) {
 static void sort_c_(FILE* file, int low, int high) {
   if (low >= high) return;
   int pivot = partition_c(file, low, high);
-  printf("%d\n", pivot);
   sort_c_(file, low, pivot - 1);
   sort_c_(file, pivot + 1, high);
 }
