@@ -56,13 +56,11 @@ void generate(char *file, uint word_size, uint word_count) {
 }
 
 int check_word_size_sys(char *file) {
-  int fd = open(file, O_RDONLY), size = 0;
+  int fd = open(file, O_RDONLY), size = -1;
   if (fd < 0) panic("Can not open file '%s': %s", file, strerror(errno));
-  char c = ' ';
-  while(c && c != '\n' && c != '\r') {
+
+  for (char c = ' '; c && c != '\n' && c != '\r'; size++)
     read(fd, &c, 1);
-    size++;
-  }
   close(fd);
   return size;
 }
@@ -90,12 +88,9 @@ int check_word_size_c(char* file) {
   FILE* f = fopen(file, "r");
   if (!f) panic("Can not open file '%s': %s", file, strerror(errno));
 
-  char c = ' ';
-  int size = 0;
-  while(c && c != '\n' && c != '\r') {
+  int size = -1;
+  for (char c = ' '; c && c != '\n' && c != '\r'; size++)
     fread(&c, sizeof(char), 1, f);
-    size++;
-  }
   fclose(f);
   return size;
 }
@@ -148,6 +143,35 @@ void swap_sys(int fd, int line1, int line2) {
   free(buffer2);
 }
 
+void swap_c(FILE* file, int line1, int line2) {
+  int step_size = word_size + new_line_size;
+  char* buffer1 = malloc(sizeof(char) * word_size);
+  char* buffer2 = malloc(sizeof(char) * word_size);
+
+  if (fseek(file, line1 * step_size, SEEK_SET) < 0) 
+    panic("Can not seek: %s", strerror(errno));
+  if (fread(buffer1, sizeof(char), word_size, file) < 0) 
+    panic("Can not read: %s", strerror(errno));
+
+  if (fseek(file, line2 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (fread(buffer2, sizeof(char), word_size, file) < 0)
+    panic("Can not read: %s", strerror(errno));
+
+  if (fseek(file, line1 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (fwrite(buffer2, sizeof(char), word_size, file) < 0)
+    panic("Can not write: %s", strerror(errno));
+  
+  if (fseek(file, line2 * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (fwrite(buffer1, sizeof(char), word_size, file) < 0)
+    panic("Can not write: %s", strerror(errno));
+
+  free(buffer1);
+  free(buffer2);
+}
+
 int partition_sys(int fd, uint low, uint high) {
   uint step_size = word_size + new_line_size;
 
@@ -176,11 +200,48 @@ int partition_sys(int fd, uint low, uint high) {
   return i + 1;
 }
 
+int partition_c(FILE* file, uint low, uint high) {
+  uint step_size = word_size + new_line_size;
+
+  char* pivot_buffer = malloc(sizeof(char) * word_size);
+  char* buffer = malloc(sizeof(char) * word_size);
+
+  if (fseek(file, high * step_size, SEEK_SET) < 0)
+    panic("Can not seek: %s", strerror(errno));
+  if (fread(pivot_buffer, sizeof(char), word_size, file) < 0)
+    panic("Can not read: %s", strerror(errno));
+
+  int i = low - 1;
+  for (int j = low; j < high; j++) {
+    if (fseek(file, j * step_size, SEEK_SET) < 0)
+      panic("Can not seek: %s", strerror(errno));
+    if (fread(buffer, sizeof(char), word_size, file) < 0)
+      panic("Can not read: %s", strerror(errno));
+    
+    if (strncmp(buffer, pivot_buffer, word_size) < 0) 
+      swap_c(file, ++i, j);
+  }
+  swap_c(file, i + 1, high);
+
+  free(pivot_buffer);
+  free(buffer);
+  return i + 1;
+}
+
 void sort_sys_(int fd, int low, int high) {
   if (low >= high) return;
   int pivot = partition_sys(fd, low, high);
+  printf("%d\n", pivot);
   sort_sys_(fd, low, pivot - 1);
   sort_sys_(fd, pivot + 1, high);
+}
+
+void sort_c_(FILE* file, int low, int high) {
+  if (low >= high) return;
+  int pivot = partition_c(file, low, high);
+  printf("%d\n", pivot);
+  sort_c_(file, low, pivot - 1);
+  sort_c_(file, pivot + 1, high);
 }
 
 void sort_sys(char *file, int word_count_, int word_size_) {
@@ -195,6 +256,18 @@ void sort_sys(char *file, int word_count_, int word_size_) {
   close(fd);
 }
 
+void sort_c(char *file, int word_count_, int word_size_) {
+  FILE* f = fopen(file, "r+");
+  if (!f) panic("Can not open file '%s': %s", file, strerror(errno));
+
+  word_count = word_count_;
+  word_size = word_size_;
+
+  sort_c_(f, 0, word_count - 1);
+
+  fclose(f);
+}
+
 int main(int argc, char** argv) {
   if (strcmp(argv[1], "generate") == 0) {
     int word_count = atoi(argv[3]);
@@ -206,9 +279,10 @@ int main(int argc, char** argv) {
     char* file = argv[2];
     int word_count = atoi(argv[3]);
     int word_size = atoi(argv[4]);
-    bool use_sys = strcmp(argv[5], "sys") == 0;
+    bool use_sys = strcmp(arg(5, "sys"), "sys") == 0;
 
     if (use_sys) sort_sys(file, word_count, word_size);
+    else sort_c(file, word_count, word_size);
   }
 
   else if (strcmp(argv[1], "copy") == 0) {
