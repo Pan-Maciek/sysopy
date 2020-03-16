@@ -5,7 +5,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
+#ifdef use_nftw
 #include <ftw.h>
+#endif
 
 typedef unsigned int uint;
 
@@ -13,9 +15,6 @@ typedef unsigned int uint;
   config_##setting = value;\
   config_use_##setting = true;\
 }
-
-#define exit 1
-#define cont 0
 
 static uint config_max_depth = 1;
 static time_t config_atime;
@@ -70,6 +69,35 @@ bool match_file(const char* path, const struct stat* s) {
   return true;
 }
 
+#ifndef use_nftw
+char* join_path(char* path1, char* path2) {
+  char* path = malloc(sizeof(char) * (strlen(path1) + strlen(path2)) + 2);
+  sprintf(path, "%s/%s", path1, path2);
+  return path;
+}
+
+static void scan_dir(char* path, int depth) {
+  if (!path || (config_use_max_depth && depth >= config_max_depth)) return;
+  DIR* dir = opendir(path);
+  if (!dir) return; // can not read
+
+  struct dirent* d;
+  struct stat s;
+  while ((d = readdir(dir))) {
+    if (strcmp(d->d_name, "..") == 0) continue;
+    if (strcmp(d->d_name, ".") == 0) continue;
+
+    char* dir = join_path(path, d->d_name);
+    if (lstat(dir, &s) < 0) continue; // can not read
+    if (S_ISDIR(s.st_mode)) scan_dir(dir, depth + 1);
+
+    if (match_file(dir, &s)) print_file(dir, &s);
+    free(dir);
+  }
+  closedir(dir);
+}
+#endif
+
 char* configure(int argc, char** argv) {
   time(&launch_time);
   struct tm *timeinfo;
@@ -104,14 +132,26 @@ char* configure(int argc, char** argv) {
   return search_path;
 }
 
+#ifdef use_nftw
 int filter(const char* path, const struct stat* s, int type, struct FTW* f) {
-  if (config_use_max_depth && type == FTW_D && f->level > config_max_depth) return exit;
-  if (!match_file(path, s)) return exit;
+  if (config_use_max_depth && type == FTW_D && f->level > config_max_depth) return 1;
+  if (!match_file(path, s)) return 1;
   print_file(path, s);
-  return cont;
+  return 0;
 }
+#endif
 
-#define find(path) nftw(path, filter, 0, 0)
+void find(char* path) {
+  #ifndef use_nftw
+  struct stat s;
+  if (lstat(path, &s) >= 0 && match_file(path, &s)) 
+    print_file(path, &s);
+  scan_dir(path, 0);
+  #endif
+  #ifdef use_nftw
+  nftw(path, filter, 0, 0);
+  #endif
+}
 
 int main(int argc, char** argv) {
   char* search_path = configure(argc - 1, argv + 1);
