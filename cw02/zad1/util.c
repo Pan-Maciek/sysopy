@@ -42,12 +42,12 @@ static const uint new_line_size = 1;
 static struct tms tms_start, tms_end;
 static clock_t clock_start, clock_end;
 
-// name, real time, sys time, user time
-#define time_it(name, code_block) {\
+// real time, sys time, user time
+#define time_it(code_block) {\
   clock_start = times(&tms_start);\
   code_block\
   clock_end = times(&tms_end);\
-  printf("%s, %ld, %ld, %ld\n", name, clock_end - clock_start, tms_end.tms_stime - tms_start.tms_stime, tms_end.tms_utime - tms_start.tms_utime);\
+  printf("%ld\t%ld\t%ld\n", clock_end - clock_start, tms_end.tms_stime - tms_start.tms_stime, tms_end.tms_utime - tms_start.tms_utime);\
 }
 
 

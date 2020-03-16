@@ -1,5 +1,5 @@
 #include "sys.c"
-#include "std.c"
+#include "lib.c"
 
 int main(int argc, char** argv) {
   if (strcmp(argv[1], "generate") == 0) {
@@ -14,8 +14,8 @@ int main(int argc, char** argv) {
     int word_size = atoi(argv[4]);
     bool use_sys = strcmp(arg(5, "sys"), "sys") == 0;
 
-    if (use_sys) time_it("sort_sys", { sort_sys(file, word_count, word_size); })
-    else time_it("sort_std", { sort_c(file, word_count, word_size); })
+    if (use_sys) time_it({ sort_sys(file, word_count, word_size); })
+    else time_it({ sort_lib(file, word_count, word_size); })
     
   }
 
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     bool use_sys = strcmp(arg(6, "sys"), "sys") == 0;
     buffer = malloc(buffer_size * sizeof(char));
 
-    if (use_sys) time_it("copy_sys", { copy_sys(source, target, word_count); })
-    else time_it("copy_std", { copy_c(source, target, word_count); })
+    if (use_sys) time_it({ copy_sys(source, target, word_count); })
+    else time_it({ copy_lib(source, target, word_count); })
   } 
 }

@@ -14,7 +14,7 @@ static int check_word_size_c(char* file) {
   return size;
 }
 
-void copy_c(char *source, char *target, uint word_count) {
+void copy_lib(char *source, char *target, uint word_count) {
   int word_size = check_word_size_c(source), size;
   uint bytes_to_copy = word_count * (word_size + new_line_size);
 
@@ -33,7 +33,7 @@ void copy_c(char *source, char *target, uint word_count) {
   fclose(out);
 }
 
-static void swap_c(FILE* file, int line1, int line2) {
+static void swap_lib(FILE* file, int line1, int line2) {
   int step_size = word_size + new_line_size;
   char* buffer1 = malloc(sizeof(char) * word_size);
   char* buffer2 = malloc(sizeof(char) * word_size);
@@ -62,7 +62,7 @@ static void swap_c(FILE* file, int line1, int line2) {
   free(buffer2);
 }
 
-static int partition_c(FILE* file, uint low, uint high) {
+static int partition_lib(FILE* file, uint low, uint high) {
   uint step_size = word_size + new_line_size;
 
   char* pivot_buffer = malloc(sizeof(char) * word_size);
@@ -81,30 +81,30 @@ static int partition_c(FILE* file, uint low, uint high) {
       panic("Can not read: %s", strerror(errno));
     
     if (strncmp(buffer, pivot_buffer, word_size) < 0) 
-      swap_c(file, ++i, j);
+      swap_lib(file, ++i, j);
   }
-  swap_c(file, i + 1, high);
+  swap_lib(file, i + 1, high);
 
   free(pivot_buffer);
   free(buffer);
   return i + 1;
 }
 
-static void sort_c_(FILE* file, int low, int high) {
+static void sort_lib_(FILE* file, int low, int high) {
   if (low >= high) return;
-  int pivot = partition_c(file, low, high);
-  sort_c_(file, low, pivot - 1);
-  sort_c_(file, pivot + 1, high);
+  int pivot = partition_lib(file, low, high);
+  sort_lib_(file, low, pivot - 1);
+  sort_lib_(file, pivot + 1, high);
 }
 
-void sort_c(char *file, int word_count_, int word_size_) {
+void sort_lib(char *file, int word_count_, int word_size_) {
   FILE* f = fopen(file, "r+");
   if (!f) panic("Can not open file '%s': %s", file, strerror(errno));
 
   word_count = word_count_;
   word_size = word_size_;
 
-  sort_c_(f, 0, word_count - 1);
+  sort_lib_(f, 0, word_count - 1);
 
   fclose(f);
 }
