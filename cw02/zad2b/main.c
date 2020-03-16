@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define __USE_XOPEN_EXTENDED 1
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
