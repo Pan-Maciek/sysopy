@@ -1,4 +1,4 @@
-cc = gcc -Wall -g
+cc = gcc -Wall -ggdb
 
 all: main
 

@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <getopt.h>
 #ifdef use_nftw
 #include <ftw.h>
 #endif
@@ -98,40 +99,6 @@ static void scan_dir(char* path, int depth) {
 }
 #endif
 
-char* configure(int argc, char** argv) {
-  time(&launch_time);
-  struct tm *timeinfo;
-
-  char* search_path = argc >= 1 ? argv[0] : ".";
-  for (int i = 1; i < argc; i++) {
-
-    if (strcmp(argv[i], "-maxdepth") == 0) 
-      config(max_depth, atoi(argv[++i]))
-
-    else if (strcmp(argv[i], "-atime") == 0) {
-      int arg = atoi(argv[++i]);
-      timeinfo = localtime(&launch_time);
-      timeinfo->tm_mday -= abs(arg);
-      if (arg > 0) timeinfo->tm_mday -= 1;
-      config_atime_mode = arg >= 0 ? '+' : '-';
-
-      config(atime, mktime(timeinfo));
-    }
-
-    else if (strcmp(argv[i], "-mtime") == 0) {
-      int arg = atoi(argv[++i]);
-      timeinfo = localtime(&launch_time);
-      timeinfo->tm_mday -= abs(arg);
-      if (arg > 0) timeinfo->tm_mday -= 1;
-      config_mtime_mode = arg >= 0 ? '+' : '-';
-
-      config(mtime, mktime(timeinfo));
-    }
-  }
-
-  return search_path;
-}
-
 #ifdef use_nftw
 int filter(const char* path, const struct stat* s, int type, struct FTW* f) {
   if (config_use_max_depth && type == FTW_D && f->level > config_max_depth) return 1;
@@ -153,8 +120,47 @@ void find(char* path) {
   #endif
 }
 
+#define opt_atime_i    0
+#define opt_mtime_i    1
+#define opt_maxdepth_i 2
+
+#define case(name, code)  case opt_##name##_i: code; break
+
+const struct option options[] = {
+  {"atime",    required_argument, 0, 'a'},
+  {"mtime",    required_argument, 0, 'm'},
+  {"maxdepth", required_argument, 0,  0 },
+  {0, 0, 0, 0}
+};
+
 int main(int argc, char** argv) {
-  char* search_path = configure(argc - 1, argv + 1);
+  char* search_path = argc > 1 ? argv[1] : ".";
+
+  time(&launch_time);
+  struct tm* timeinfo;
+  for (int option; getopt_long_only(argc, argv, "", options, &option) >= 0;) {
+    switch (option) {
+      case(atime, {
+        int arg = atoi(optarg);
+        timeinfo = localtime(&launch_time);
+        timeinfo->tm_mday -= abs(arg);
+        if (arg > 0) timeinfo->tm_mday -= 1;
+        config_atime_mode = arg >= 0 ? '+' : '-';
+
+        config(atime, mktime(timeinfo));
+      });
+      case(mtime, {
+        int arg = atoi(optarg);
+        timeinfo = localtime(&launch_time);
+        timeinfo->tm_mday -= abs(arg);
+        if (arg > 0) timeinfo->tm_mday -= 1;
+        config_mtime_mode = arg >= 0 ? '+' : '-';
+
+        config(mtime, mktime(timeinfo));
+      });
+      case(maxdepth, config(max_depth, atoi(optarg)) );
+    }
+  }
   find(search_path);
   return 0;
 }
