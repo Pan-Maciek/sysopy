@@ -1,4 +1,7 @@
-#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 #define panic(str, args...) {\
@@ -12,20 +15,20 @@ typedef double number;
 typedef unsigned int uint;
 
 typedef struct matrix {
-  FILE* file;
+  int file;
   uint rows, cols;
 } matrix;
 
 static number get(matrix* m, uint row, uint col) {
   number value;
-  fseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
-  fread(&value, sizeof(number), 1, m->file);
+  lseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
+  read(m->file, &value, sizeof(number));
   return value;
 }
 
 static void set(matrix* m, number value, uint row, uint col) {
-  fseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
-  fwrite(&value, sizeof(number), 1, m->file);
+  lseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
+  write(m->file, &value, sizeof(number));
 }
 
 void print_matrix(matrix* m) {
@@ -33,27 +36,31 @@ void print_matrix(matrix* m) {
   for (uint row = 0; row < m->rows; row++) {
     for (uint col = 0; col < m->cols; col++) {
       value = get(m, row, col);
-      printf("%lf ", value);
+      printf("%.2lf ", value);
     }
     printf("\n");
   }
 }
 
 matrix* open_matrix(char* path) {
-  FILE* file = fopen(path, "r+");
-  if (!file) panic("Can not read file '%s': %s", path, strerror(errno));
+  int file = open(path, O_RDWR);
+  if (file < 0) panic("Can not read file '%s': %s", path, strerror(errno));
   matrix* m = malloc(sizeof(matrix));
-  fseek(file, -2 * sizeof(uint), SEEK_END);
-  fread(&m->rows, sizeof(uint), 1, file);
-  fread(&m->cols, sizeof(uint), 1, file);
+
+  uint size[2]; // reduce sys calls
+
+  lseek(file, -2 * sizeof(uint), SEEK_END);
+  read(file, size, 2 * sizeof(uint));
+  m->rows = size[0];
+  m->cols = size[1];
 
   m->file = file;
   return m;
 }
 
 matrix* create_matrix(char* path, uint rows, uint cols) {
-  FILE* file = fopen(path, "w+");
-  if (!file) return NULL;
+  int file = open(path, O_RDWR | O_CREAT | O_TRUNC);
+  if (!file) panic("Can not read file '%s': %s", path, strerror(errno));
   matrix* m = malloc(sizeof(matrix));
   m->file = file;
   m->rows = rows;
@@ -61,18 +68,18 @@ matrix* create_matrix(char* path, uint rows, uint cols) {
 
   number* clean_row = calloc(cols, sizeof(number));
   for (int row = 0; row < rows; row++) 
-    fwrite(clean_row, sizeof(number), cols, file);
+    write(file, clean_row, cols * sizeof(number));
+  free(clean_row);
 
   uint size[2] = { rows, cols };
-  fwrite(size, sizeof(uint), 2, file);
+  write(file, size, 2 * sizeof(uint));
 
-  fflush(file);
-  fseek(file, 0, SEEK_SET);
+  lseek(file, 0, SEEK_SET);
   return m;
 }
 
 void free_matrix(matrix* m) {
-  fclose(m->file);
+  close(m->file);
   free(m);
 }
 
