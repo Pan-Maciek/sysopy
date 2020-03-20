@@ -57,8 +57,11 @@ matrix* open_matrix(char* path) {
   matrix* m = malloc(sizeof(matrix));
 
   static char raw[number_size];
-  lseek(file, -2 * number_size, SEEK_END);
-  read(file, raw, (number_size - 1) * sizeof(char));
+
+  lseek(file, -2 * number_size + 1, SEEK_END);
+  read(file, raw, number_size * sizeof(char));
+  raw[number_size - 1] = 0;
+
   m->rows = atoi(raw);
   read(file, raw, (number_size - 1) * sizeof(char));
   m->cols = atoi(raw);
