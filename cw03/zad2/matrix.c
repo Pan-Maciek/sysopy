@@ -3,6 +3,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #define panic(str, args...) {\
   fprintf(stderr, "%s:%i ", __func__, __LINE__);\
@@ -11,24 +15,29 @@
   exit(1);\
 }
 
-typedef double number;
+typedef int number;
 typedef unsigned int uint;
+#define number_size 12
 
 typedef struct matrix {
   int file;
   uint rows, cols;
 } matrix;
 
+static int get_index(matrix* m, uint row, uint col) {
+  return sizeof(char) * (m->cols * row + col) * number_size;
+}
+
 static number get(matrix* m, uint row, uint col) {
-  number value;
-  lseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
-  read(m->file, &value, sizeof(number));
-  return value;
+  static char raw[number_size];
+  lseek(m->file, get_index(m, row, col), SEEK_SET);
+  read(m->file, raw, (number_size-1) * sizeof(char));
+  return atoi(raw);
 }
 
 static void set(matrix* m, number value, uint row, uint col) {
-  lseek(m->file, (m->cols * row + col) * sizeof(number), SEEK_SET);
-  write(m->file, &value, sizeof(number));
+  lseek(m->file, get_index(m, row, col), SEEK_SET);
+  dprintf(m->file, "%11i", value);
 }
 
 void print_matrix(matrix* m) {
@@ -36,7 +45,7 @@ void print_matrix(matrix* m) {
   for (uint row = 0; row < m->rows; row++) {
     for (uint col = 0; col < m->cols; col++) {
       value = get(m, row, col);
-      printf("%.2lf ", value);
+      printf("%i ", value);
     }
     printf("\n");
   }
@@ -47,12 +56,12 @@ matrix* open_matrix(char* path) {
   if (file < 0) panic("Can not read file '%s': %s", path, strerror(errno));
   matrix* m = malloc(sizeof(matrix));
 
-  uint size[2]; // reduce sys calls
-
-  lseek(file, -2 * sizeof(uint), SEEK_END);
-  read(file, size, 2 * sizeof(uint));
-  m->rows = size[0];
-  m->cols = size[1];
+  static char raw[number_size];
+  lseek(file, -2 * number_size, SEEK_END);
+  read(file, raw, (number_size - 1) * sizeof(char));
+  m->rows = atoi(raw);
+  read(file, raw, (number_size - 1) * sizeof(char));
+  m->cols = atoi(raw);
 
   m->file = file;
   return m;
@@ -66,13 +75,17 @@ matrix* create_matrix(char* path, uint rows, uint cols) {
   m->rows = rows;
   m->cols = cols;
 
-  number* clean_row = calloc(cols, sizeof(number));
+  int row_size = (cols * number_size) * sizeof(char);
+  char* clean_row = malloc(row_size);
+  for (int i = 0; i < cols * number_size; i++)
+    clean_row[i] = '\t';
+  clean_row[row_size - 1] = '\n';
+
   for (int row = 0; row < rows; row++) 
-    write(file, clean_row, cols * sizeof(number));
+    write(file, clean_row, row_size);
   free(clean_row);
 
-  uint size[2] = { rows, cols };
-  write(file, size, 2 * sizeof(uint));
+  dprintf(file, "%11u\t%11u", rows, cols);
 
   lseek(file, 0, SEEK_SET);
   return m;
