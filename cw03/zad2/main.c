@@ -1,62 +1,29 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
-#include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <sys/times.h>
-#include <wait.h>
+#include <sys/wait.h>
+#include <sys/file.h>
 
-#include "matrix.c"
+#define list_file argv[1]
+#define timelimit argv[3]
+#define use_flock argv[4]
+#define worker_exe "worker.out"
 
-matrix* multiply(matrix* A, matrix* B, char* out, int workers) {
-  matrix* C = create_matrix(out, A->rows, B->cols);
+int main(int argc, char** argv) {
 
-  // spawn workers
-  for (int i = 0; i < A->cols; i+=2) {
-    if (fork() == 0) { // child
-      mul(A, B, C, i, i+2);
-      exit(0);
-    }
-  }
+  int processes = atoi(argv[2]), status;
+  pid_t pid;
 
-  // wait for all to finish
-  for (int i = 0; i < workers; i++)
-    wait(NULL);
-
-  return C;
-}
-
-
-int main() {
-  int rows = 4, cols = 8;
-  matrix* A = create_matrix("A", rows, cols);
-  for (int row = 0; row < rows; row++) {
-    for (int col = 0; col < cols; col++) {
-      set(A, col + row + 1, row, col);
-    }
-  }
-  matrix* B = create_matrix("B", cols, cols);
-  for (int col = 0; col < cols; col++) {
-    for (int row = 0; row < cols; row++) {
-      set(B, col + row + 1, row, col);
-    }
-  }
-
-  matrix* C = multiply(A, B, "C", 3);
-
-  print_matrix(A);
-  free_matrix(A);
-  printf("\n");
-  print_matrix(B);
-  free_matrix(B);
-  printf("\n");
-  print_matrix(C);
-  free_matrix(C);
+  for (int i = 0; i < processes; i++) 
+    if (fork() == 0) 
+      execl(worker_exe, worker_exe, list_file, timelimit, use_flock, NULL); 
+  
+  while((pid = wait(&status)) != -1) 
+    printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
 
   return 0;
 }
