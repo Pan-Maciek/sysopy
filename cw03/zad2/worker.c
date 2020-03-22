@@ -9,23 +9,13 @@
 
 #include "matrix.c"
 
-// list_file    argv[1]
-// timelimit    argv[2]
-// use_flock    argv[3]
-// worker_id    argv[4]
-// worker_count argv[5]
-
 static char 
 A_file_path[PATH_MAX],
 B_file_path[PATH_MAX], 
 C_file_path[PATH_MAX];
 
-int main(int argc, char** argv) {
-  uint id = atoi(argv[4]);
-  uint workers = atoi(argv[5]);
-  bool use_flock = strcmp(argv[3], "flock") == 0;
-
-  FILE* list = fopen(argv[1], "r");
+void worker(char* list_file, uint id, uint workers, bool use_flock) {
+  FILE* list = fopen(list_file, "r");
   int multiplied = 0;
   while (fscanf(list, "%s %s %s\n", A_file_path, B_file_path, C_file_path) == 3) {
     int b_fd = open(B_file_path, O_RDONLY);
@@ -54,5 +44,5 @@ int main(int argc, char** argv) {
   }
   fclose(list);
 
-  return multiplied;
+  exit(multiplied);
 }

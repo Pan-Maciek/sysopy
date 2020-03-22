@@ -9,23 +9,17 @@
 #include <sys/file.h>
 #include <errno.h>
 
+#include "worker.c"
 #define list_file argv[1]
-#define timelimit argv[3]
-#define use_flock argv[4]
-#define worker_exe "worker.out"
 
 int main(int argc, char** argv) {
 
   int processes = atoi(argv[2]), status;
+  bool use_flock = strcmp(argv[4], "flock") == 0;
   pid_t pid;
 
-  char process_id[12], processes_count[12];
-  sprintf(processes_count, "%i", processes);
   for (int i = 0; i < processes; i++) 
-    if (fork() == 0) {
-      sprintf(process_id, "%i", i);
-      execl(worker_exe, worker_exe, list_file, timelimit, use_flock, process_id, processes_count, NULL);
-    }
+    if (fork() == 0) worker(list_file, i, processes, use_flock);
   
   while((pid = wait(&status)) != -1) 
     printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
