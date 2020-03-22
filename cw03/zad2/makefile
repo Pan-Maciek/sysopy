@@ -7,3 +7,6 @@ main: main.c
 
 worker: worker.c
 	$(cc) -o worker.out worker.c
+
+util: 
+	$(cc) -o util.out util.c

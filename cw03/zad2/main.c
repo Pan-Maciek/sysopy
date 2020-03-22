@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/file.h>
+#include <errno.h>
 
 #define list_file argv[1]
 #define timelimit argv[3]
@@ -18,9 +19,13 @@ int main(int argc, char** argv) {
   int processes = atoi(argv[2]), status;
   pid_t pid;
 
+  char process_id[12], processes_count[12];
+  sprintf(processes_count, "%i", processes);
   for (int i = 0; i < processes; i++) 
-    if (fork() == 0) 
-      execl(worker_exe, worker_exe, list_file, timelimit, use_flock, NULL); 
+    if (fork() == 0) {
+      sprintf(process_id, "%i", i);
+      execl(worker_exe, worker_exe, list_file, timelimit, use_flock, process_id, processes_count, NULL);
+    }
   
   while((pid = wait(&status)) != -1) 
     printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
