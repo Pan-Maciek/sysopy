@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -8,6 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define min(a, b) a > b ? b : a
+#define max(a, b) a > b ? a : b
+
 #define panic(str, args...) {\
   fprintf(stderr, "%s:%i ", __func__, __LINE__);\
   fprintf(stderr, str, args);\
@@ -15,98 +19,121 @@
   exit(1);\
 }
 
-typedef int number;
+typedef int number; // if changed remember to change dprint format
 typedef unsigned int uint;
 #define number_size 12
 
 typedef struct matrix {
-  int file;
+  int fd;
   uint rows, cols;
+  number* values;
 } matrix;
 
 static int get_index(matrix* m, uint row, uint col) {
-  return sizeof(char) * (m->cols * row + col) * number_size;
+  return m->cols * row + col;
 }
 
-static number get(matrix* m, uint row, uint col) {
+matrix* create_matrix(char* file, uint rows, uint cols) {
+  matrix* m = malloc(sizeof(matrix));
+  m->rows = rows;
+  m->cols = cols;
+  m->values = calloc(rows * cols, sizeof(number));
+  int fd = m->fd = open(file, O_RDWR | O_CREAT | O_TRUNC);
+
+  flock(fd, LOCK_EX);
+  int row_size = cols * number_size;
+  char* clean_row = malloc(row_size * sizeof(char));
+  for (int i = 0; i < row_size; i++)
+    clean_row[i] = '\t';
+  clean_row[row_size - 1] = '\n';
+
+  for (int row = 0; row < rows; row++)
+    write(fd, clean_row, row_size * sizeof(char));
+  free(clean_row);
+  dprintf(fd, "%11u\t%11u\n", rows, cols);
+  
+  flock(fd, LOCK_UN);
+  return m;
+}
+
+matrix* open_partial(int fd, uint min_col, uint max_col, uint rows, uint cols) {
+  matrix* m = malloc(sizeof(matrix));
+
+  m->rows = rows;
+  m->cols = max_col - min_col + 1;
+
+  m->values = malloc(m->rows * m->cols * sizeof(number));
+  int row_size = number_size * cols * sizeof(char);
+  int row_data_size = m->cols * number_size * sizeof(char);
+  char* row_data = malloc(row_data_size);
+
+  for (int row = 0; row < m->rows; row++) {
+    lseek(fd, row_size * row + min_col * number_size * sizeof(char), SEEK_SET);
+    read(fd, row_data, row_data_size);
+    for (int i = number_size - 1; i <= row_data_size; i += number_size)
+      row_data[i] = 0;
+    char* tmp_row_ptr = row_data;
+    for (int col = 0; col <= m->cols; col++) {
+      m->values[get_index(m, row, col)] = atoi(tmp_row_ptr);
+      tmp_row_ptr += number_size;
+    }
+  }
+
+  m->fd = fd;
+  return m;
+}
+
+void read_size(int fd, uint* rows, uint* cols) { // flock file first
   static char raw[number_size];
-  lseek(m->file, get_index(m, row, col), SEEK_SET);
-  read(m->file, raw, (number_size-1) * sizeof(char));
-  return atoi(raw);
+  lseek(fd, -2 * number_size * sizeof(char), SEEK_END);
+  read(fd, raw, number_size * sizeof(char));
+  raw[number_size - 1] = 0;
+
+  *rows = atoi(raw);
+  read(fd, raw, (number_size - 1) * sizeof(char));
+  *cols = atoi(raw);
 }
 
-static void set(matrix* m, number value, uint row, uint col) {
-  lseek(m->file, get_index(m, row, col), SEEK_SET);
-  dprintf(m->file, "%11i", value);
+matrix* open_matrix(char* file) {
+  int fd = open(file, O_RDONLY);
+
+  flock(fd, LOCK_EX);
+  uint rows, cols;
+  read_size(fd, &rows, &cols);
+  matrix* m = open_partial(fd, 0, cols - 1, rows, cols);
+  flock(fd, LOCK_UN);
+  return m;
 }
 
 void print_matrix(matrix* m) {
   number value;
   for (uint row = 0; row < m->rows; row++) {
     for (uint col = 0; col < m->cols; col++) {
-      value = get(m, row, col);
+      value = m->values[get_index(m, row, col)];
       printf("%i ", value);
     }
     printf("\n");
   }
 }
 
-matrix* open_matrix(char* path) {
-  int file = open(path, O_RDWR);
-  if (file < 0) panic("Can not read file '%s': %s", path, strerror(errno));
-  matrix* m = malloc(sizeof(matrix));
-
-  static char raw[number_size];
-
-  lseek(file, -2 * number_size + 1, SEEK_END);
-  read(file, raw, number_size * sizeof(char));
-  raw[number_size - 1] = 0;
-
-  m->rows = atoi(raw);
-  read(file, raw, (number_size - 1) * sizeof(char));
-  m->cols = atoi(raw);
-
-  m->file = file;
-  return m;
-}
-
-matrix* create_matrix(char* path, uint rows, uint cols) {
-  int file = open(path, O_RDWR | O_CREAT | O_TRUNC);
-  if (!file) panic("Can not read file '%s': %s", path, strerror(errno));
-  matrix* m = malloc(sizeof(matrix));
-  m->file = file;
-  m->rows = rows;
-  m->cols = cols;
-
-  int row_size = (cols * number_size) * sizeof(char);
-  char* clean_row = malloc(row_size);
-  for (int i = 0; i < cols * number_size; i++)
-    clean_row[i] = '\t';
-  clean_row[row_size - 1] = '\n';
-
-  for (int row = 0; row < rows; row++) 
-    write(file, clean_row, row_size);
-  free(clean_row);
-
-  dprintf(file, "%11u\t%11u", rows, cols);
-
-  lseek(file, 0, SEEK_SET);
-  return m;
-}
-
 void free_matrix(matrix* m) {
-  close(m->file);
+  close(m->fd);
+  free(m->values);
   free(m);
 }
 
-int mul(matrix* A, matrix* B, matrix* C, int min_col, int max_col) {
-  int inner = A->cols, sum, i;
-  for (int row = 0; row < C->rows; row++) {
-    for (int col = min_col; col < max_col; col++) {
-      for (sum = i = 0; i < inner; i++) 
-        sum += get(A, row, i) * get(B, i, col);
-      set(C, sum, row, col);
+matrix* multiply(matrix* A, matrix* B) { // matrix B should be loaded using load_partial
+  matrix* C = malloc(sizeof(matrix));
+  C->rows = A->rows;
+  C->cols = B->cols;
+  C->values = malloc(C->rows * C->cols * sizeof(number));
+  int inner = B->cols, sum, i;
+  for (int row = 0; row < A->rows; row++) {
+    for (int col = 0; col < inner; col++) {
+      for (sum = i = 0; i < inner; i++)
+        sum += A->values[get_index(A, row, i)] * B->values[get_index(B, i, col)];
+      C->values[get_index(C, row, col)] = sum;
     }
   }
-  return 0; // number of multiplications done
+  return C;
 }
