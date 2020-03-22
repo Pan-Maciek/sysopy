@@ -33,26 +33,41 @@ static int get_index(matrix* m, uint row, uint col) {
   return m->cols * row + col;
 }
 
+void dump_to_fragment_file(char* root_path, uint id, matrix* m) {
+  char* fragment_path = calloc(strlen(root_path) + 14, sizeof(char));
+  sprintf(fragment_path, "%s-%u", root_path, id);
+  FILE* file = fopen(fragment_path, "w+");
+  for (int row = 0; row < m->rows; row++) {
+    for (int col = 0; col < m->cols; col++) 
+      fprintf(file, "%11i\t", m->values[get_index(m, row, col)]);
+    fseek(file, -1 * sizeof(char), SEEK_CUR);
+    fwrite("\n", sizeof(char), 1, file);
+  }
+  fclose(file);
+}
+
+void dump_to_file(char* path, uint min_col, uint cols, uint id, matrix* m) {
+  int fd = open(path, O_RDWR | O_CREAT);
+  flock(fd, LOCK_EX);
+  for (int row = 0; row < m->rows; row++) {
+    for (int col = 0; col < m->cols; col++) {
+      lseek(fd, (row * cols + col + min_col) * number_size * sizeof(char), SEEK_SET);
+      dprintf(fd, (col + min_col + 1 == cols) ? "%11i\n" : "%11i\t", m->values[get_index(m, row, col)]);
+    }
+  }
+  if (id == 0) {
+    lseek(fd, m->rows * cols * number_size * sizeof(char), SEEK_SET);
+    dprintf(fd, "%11u\t%11u\t\n", m->rows, cols); // extra tab is for compatibility with paste
+  }
+  flock(fd, LOCK_UN);
+  close(fd);
+}
+
 matrix* create_matrix(char* file, uint rows, uint cols) {
   matrix* m = malloc(sizeof(matrix));
   m->rows = rows;
   m->cols = cols;
   m->values = calloc(rows * cols, sizeof(number));
-  int fd = m->fd = open(file, O_RDWR | O_CREAT | O_TRUNC);
-
-  flock(fd, LOCK_EX);
-  int row_size = cols * number_size;
-  char* clean_row = malloc(row_size * sizeof(char));
-  for (int i = 0; i < row_size; i++)
-    clean_row[i] = '\t';
-  clean_row[row_size - 1] = '\n';
-
-  for (int row = 0; row < rows; row++)
-    write(fd, clean_row, row_size * sizeof(char));
-  free(clean_row);
-  dprintf(fd, "%11u\t%11u\n", rows, cols);
-  
-  flock(fd, LOCK_UN);
   return m;
 }
 
@@ -85,7 +100,7 @@ matrix* open_partial(int fd, uint min_col, uint max_col, uint rows, uint cols) {
 
 void read_size(int fd, uint* rows, uint* cols) { // flock file first
   static char raw[number_size];
-  lseek(fd, -2 * number_size * sizeof(char), SEEK_END);
+  lseek(fd, (-2 * number_size - 1) * sizeof(char), SEEK_END);
   read(fd, raw, number_size * sizeof(char));
   raw[number_size - 1] = 0;
 

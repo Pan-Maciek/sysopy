@@ -22,7 +22,7 @@ const struct option options[] = {
   {"show"    , no_argument      , 0, 's'},
   {"generate", required_argument, 0, 'g'},
   {"file"    , required_argument, 0, 'f'},
-  0
+  {0, 0, 0, 0}
 };
 
 int main(int argc, char** argv) {
@@ -39,13 +39,14 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (opt_file == NULL) panic("-file is required", 0);
+  if (opt_file == NULL) exit(1);
 
   matrix* m = opt_generate ? create_matrix(opt_file, opt_rows, opt_cols) : open_matrix(opt_file);
   if (opt_generate) {
     for (int row = 0; row < opt_rows; row++) 
       for (int col = 0; col < opt_cols; col++) 
-         set(m, rand() % 10, row, col);
+        m->values[get_index(m, row, col)] = rand() % 10;
+    dump_to_file(opt_file, 0, m->cols, 0, m);
   }
 
   if (opt_show) print_matrix(m);

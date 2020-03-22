@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <fcntl.h>
 
 #include <unistd.h>
@@ -20,8 +21,9 @@ B_file_path[PATH_MAX],
 C_file_path[PATH_MAX];
 
 int main(int argc, char** argv) {
-  int id = atoi(argv[4]);
-  int workers = atoi(argv[5]);
+  uint id = atoi(argv[4]);
+  uint workers = atoi(argv[5]);
+  bool use_flock = strcmp(argv[3], "flock") == 0;
 
   FILE* list = fopen(argv[1], "r");
   int multiplied = 0;
@@ -30,16 +32,20 @@ int main(int argc, char** argv) {
     uint rows, cols;
     read_size(b_fd, &rows, &cols);
 
-    int cols_to_process = cols / workers + (cols & workers ? 1 : 0);
+    int cols_to_process = cols / workers + (cols % workers ? 1 : 0);
     int min_col = cols_to_process * id;
     int max_col = min(cols_to_process + min_col, cols - 1) - 1;
     if (max_col < min_col) {
       close(b_fd);
       continue;
     }
+
     matrix* A = open_matrix(A_file_path);
     matrix* B = open_partial(b_fd, min_col, max_col, rows, cols);
     matrix* C = multiply(A, B);
+
+    if (use_flock) dump_to_file(C_file_path, min_col, cols, id, C);
+    else dump_to_fragment_file(C_file_path, id, C);
 
     free_matrix(A);
     free_matrix(B);
