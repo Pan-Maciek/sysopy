@@ -73,7 +73,7 @@ matrix* open_partial(int fd, uint min_col, uint max_col, uint rows, uint cols) {
     for (int i = number_size - 1; i <= row_data_size; i += number_size)
       row_data[i] = 0;
     char* tmp_row_ptr = row_data;
-    for (int col = 0; col <= m->cols; col++) {
+    for (int col = 0; col < m->cols; col++) {
       m->values[get_index(m, row, col)] = atoi(tmp_row_ptr);
       tmp_row_ptr += number_size;
     }
@@ -127,9 +127,9 @@ matrix* multiply(matrix* A, matrix* B) { // matrix B should be loaded using load
   C->rows = A->rows;
   C->cols = B->cols;
   C->values = malloc(C->rows * C->cols * sizeof(number));
-  int inner = B->cols, sum, i;
+  int inner = B->rows, sum, i;
   for (int row = 0; row < A->rows; row++) {
-    for (int col = 0; col < inner; col++) {
+    for (int col = 0; col < B->cols; col++) {
       for (sum = i = 0; i < inner; i++)
         sum += A->values[get_index(A, row, i)] * B->values[get_index(B, i, col)];
       C->values[get_index(C, row, col)] = sum;

@@ -30,14 +30,13 @@ int main(int argc, char** argv) {
     uint rows, cols;
     read_size(b_fd, &rows, &cols);
 
-    int cols_to_process = cols / workers;
+    int cols_to_process = cols / workers + (cols & workers ? 1 : 0);
     int min_col = cols_to_process * id;
-    int max_col = min(cols_to_process + min_col, cols) - 1;
+    int max_col = min(cols_to_process + min_col, cols - 1) - 1;
     if (max_col < min_col) {
       close(b_fd);
       continue;
     }
-    
     matrix* A = open_matrix(A_file_path);
     matrix* B = open_partial(b_fd, min_col, max_col, rows, cols);
     matrix* C = multiply(A, B);
