@@ -41,12 +41,13 @@ int main(int argc, char** argv) {
 
   if (opt_file == NULL) exit(1);
 
-  matrix* m = opt_generate ? create_matrix(opt_file, opt_rows, opt_cols) : open_matrix(opt_file);
+  matrix* m = opt_generate ? create_matrix(opt_rows, opt_cols) : open_matrix(opt_file);
   if (opt_generate) {
+    int fd = open(opt_file, O_CREAT | O_TRUNC | O_RDWR);
     for (int row = 0; row < opt_rows; row++) 
       for (int col = 0; col < opt_cols; col++) 
         m->values[get_index(m, row, col)] = rand() % 10;
-    dump_to_file(opt_file, 0, m->cols, 0, m);
+    dump_to_file(fd, 0, m->cols, 0, m);
   }
 
   if (opt_show) print_matrix(m);

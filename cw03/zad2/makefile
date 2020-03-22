@@ -1,12 +1,15 @@
 cc = gcc -Wall -ggdb
 
-all: main util
+all: main util dirs
+
+dirs:
+	mkdir -p data
 
 main: main.c
 	$(cc) -o main.out main.c
 
-util: 
+util:
 	$(cc) -o util.out util.c
 
 clean:
-	rm -Rf *.out *.txt
+	rm -Rf *.out *.txt data

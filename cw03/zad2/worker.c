@@ -9,7 +9,7 @@
 
 #include "matrix.c"
 
-static char 
+char 
 A_file_path[PATH_MAX],
 B_file_path[PATH_MAX], 
 C_file_path[PATH_MAX];
@@ -34,8 +34,12 @@ void worker(char* list_file, uint id, uint workers, bool use_flock) {
     matrix* B = open_partial(b_fd, min_col, max_col, rows, cols);
     matrix* C = multiply(A, B);
 
-    if (use_flock) dump_to_file(C_file_path, min_col, cols, id, C);
-    else dump_to_fragment_file(C_file_path, id, C);
+    if (use_flock) {
+      int fd = open(C_file_path, O_CREAT | O_RDWR);
+      dump_to_file(fd, min_col, cols, id, C);
+      close(fd);
+    }
+    else dump_to_fragment_file(C_file_path, cols, id, C);
 
     free_matrix(A);
     free_matrix(B);
