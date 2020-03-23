@@ -16,10 +16,11 @@ int main(int argc, char** argv) {
 
   int processes = atoi(argv[2]), status;
   bool use_flock = strcmp(argv[4], "flock") == 0;
+  int time_limit = atoi(argv[3]);
   pid_t pid;
 
-  for (int i = 0; i < processes; i++) 
-    if (fork() == 0) worker(list_file, i, processes, use_flock);
+  for (int id = 0; id < processes; id++) 
+    if (fork() == 0) time_manager(list_file, id, processes, use_flock, time_limit);
   
   while((pid = wait(&status)) != -1) 
     printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
