@@ -16,5 +16,5 @@ clean:
 
 test: all
 	./util.out -min 10 -max 100 -c 100 -g list.txt
-	./main.out list.txt 10 10 flock | less
+	./main.out list.txt 10 100 100 flock | less
 	./util.out -t list.txt | less
