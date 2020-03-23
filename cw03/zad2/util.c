@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 
   matrix* m = opt_generate ? create_matrix(opt_rows, opt_cols) : open_matrix(opt_file);
   if (opt_generate) {
-    int fd = open(opt_file, O_CREAT | O_TRUNC | O_RDWR);
+    int fd = open(opt_file, O_CREAT | O_TRUNC | O_RDWR, 0666);
     for (int row = 0; row < opt_rows; row++) 
       for (int col = 0; col < opt_cols; col++) 
         m->values[get_index(m, row, col)] = rand() % 10;

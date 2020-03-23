@@ -51,7 +51,6 @@ void dump_to_fragment_file(char* root_path, uint cols, uint id, matrix* m) {
     fseek(file, -1 * sizeof(char), SEEK_CUR);
     fwrite("\n", sizeof(char), 1, file);
   }
-  if (id == 0) fprintf(file, "%11u\t%11u", m->rows, cols); // extra tab is for compatibility with paste
   fclose(file);
 }
 
@@ -66,7 +65,7 @@ void dump_to_file(int fd, uint min_col, uint cols, uint id, matrix* m) {
 
   if (id == 0) {
     lseek(fd, m->rows * cols * number_size * sizeof(char), SEEK_SET);
-    dprintf(fd, "%11u\t%11u\t\n", m->rows, cols); // extra tab is for compatibility with paste
+    dprintf(fd, "%11u\t%11u\n", m->rows, cols);
     ftruncate(fd, lseek(fd, 0, SEEK_CUR));
   }
 
@@ -99,7 +98,7 @@ matrix* open_partial(int fd, uint min_col, uint max_col, uint rows, uint cols) {
 
 void read_size(int fd, uint* rows, uint* cols) { // flock file first
   static char raw[number_size];
-  lseek(fd, (-2 * number_size - 1) * sizeof(char), SEEK_END);
+  lseek(fd, -2 * number_size * sizeof(char), SEEK_END);
   read(fd, raw, number_size * sizeof(char));
   raw[number_size - 1] = 0;
 
@@ -109,7 +108,7 @@ void read_size(int fd, uint* rows, uint* cols) { // flock file first
 }
 
 matrix* open_matrix(char* file) {
-  int fd = open(file, O_RDONLY);
+  int fd = open(file, O_RDONLY, 777);
 
   flock(fd, LOCK_EX);
   uint rows, cols;

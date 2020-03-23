@@ -32,8 +32,8 @@ int main(int argc, char** argv) {
   int out = fileno(stdout);
   while(fscanf(list, "%s %s %s\n", A_file_path, B_file_path, C_file_path) == 3) {
     int fd = open(B_file_path, O_RDONLY);
-    uint cols;
-    read_size(fd, NULL, &cols);
+    uint rows, cols;
+    read_size(fd, &rows, &cols);
 
     int cols_to_process = cols / processes + (cols % processes ? 1 : 0);
     int argc = cols / cols_to_process + (cols % cols_to_process ? 1 : 0);
@@ -45,13 +45,15 @@ int main(int argc, char** argv) {
       sprintf(argv[i], "%s-%i", C_file_path, i - 1);
     }
     close(fd);
-    fd = open(C_file_path, O_RDWR | O_CREAT | O_TRUNC);
+    fd = open(C_file_path, O_RDWR | O_CREAT | O_TRUNC, 0666);
     dup2(fd, out);
     if (fork() == 0) execvp("paste", argv);
     if (fork() == 0) execvp("rm", argv);
 
     for (int i = 1; i <= argc; i++) free(argv[i]);
     free(argv);
+    while(wait(NULL) != -1);
+    dprintf(fd, "%11u\t%11u\n", rows, cols);
 
     close(fd);
   }
