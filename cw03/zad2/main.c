@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
       sprintf(argv[i], "%s-%i", C_file_path, i - 1);
     }
     close(fd);
-    fd = open(C_file_path, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    fd = open(C_file_path, O_RDWR | O_CREAT | O_TRUNC, 0644);
     dup2(fd, out);
     if (fork() == 0) execvp("paste", argv);
     if (fork() == 0) execvp("rm", argv);

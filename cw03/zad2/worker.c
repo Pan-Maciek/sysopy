@@ -18,12 +18,12 @@ C_file_path[PATH_MAX];
 void worker(char* list_file, uint id, uint workers, bool use_flock) {
   FILE* list = fopen(list_file, "r");
   int multiplied = 0;
-  int ipc = open("ipc", O_CREAT | O_RDWR, 0666);
+  int ipc = open("ipc", O_CREAT | O_RDWR, 0644);
   lseek(ipc, id * sizeof(int), SEEK_SET);
   write(ipc, &multiplied, sizeof(int));
 
   while (fscanf(list, "%s %s %s\n", A_file_path, B_file_path, C_file_path) == 3) {
-    int b_fd = open(B_file_path, O_RDONLY, 0666);
+    int b_fd = open(B_file_path, O_RDONLY, 0644);
     uint rows, cols;
     read_size(b_fd, &rows, &cols);
 
@@ -40,7 +40,7 @@ void worker(char* list_file, uint id, uint workers, bool use_flock) {
     matrix* C = multiply(A, B);
 
     if (use_flock) {
-      int fd = open(C_file_path, O_CREAT | O_RDWR, 0666);
+      int fd = open(C_file_path, O_CREAT | O_RDWR, 0644);
       dump_to_file(fd, min_col, cols, id, C);
       close(fd);
     }
@@ -68,7 +68,7 @@ void time_manager(char* list_file, uint id, uint workers, bool use_flock, uint t
   }
 
   wait(NULL);
-  int ipc = open("ipc", O_RDONLY, 0666), ret;
+  int ipc = open("ipc", O_RDONLY, 0644), ret;
   lseek(ipc, id * sizeof(int), 1);
   read(ipc, &ret, sizeof(int));
 
