@@ -12,15 +12,6 @@ char* join_path(char* path1, char* path2) {
   return path;
 }
 
-void ls(char* path) {
-  printf("\npid(%i) path(%s)\n", getpid(), path);
-  static const char cmd[] = "ls -a %s";
-  char* ls = calloc(sizeof(cmd), sizeof(char));
-  sprintf(ls, cmd, path);
-  system(ls);
-  free(ls);
-}
-
 void scan_dir(char* path) {
   if (!path) return;
   DIR* dir = opendir(path);
@@ -35,9 +26,9 @@ void scan_dir(char* path) {
     char* dir = join_path(path, d->d_name);
     if (lstat(dir, &s) < 0) continue; // can not read
     if (S_ISDIR(s.st_mode) && fork() == 0) {
-      ls(dir);
-      exit(0);
-    } else wait(NULL);
+      printf("\npid(%i) path(%s)\n", getpid(), dir);
+      execlp("ls", "ls", dir, "-l", NULL);
+    } else wait(NULL); // wait for preatier printing
 
     free(dir);
   }
