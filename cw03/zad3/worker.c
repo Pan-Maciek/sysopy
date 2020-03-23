@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <sys/resource.h>
 #include <linux/limits.h>
 
 #include "matrix.c"
@@ -57,20 +58,14 @@ void worker(char* list_file, uint id, uint workers, bool use_flock) {
   exit(multiplied);
 }
 
-void time_manager(char* list_file, uint id, uint workers, bool use_flock, uint time_limit) {
-  if (fork() == 0) {
-    sleep(time_limit);
-    exit(0);
-  }
-  if (fork() == 0) {
-    worker(list_file, id, workers, use_flock);
-    exit(0);
-  }
+void time_manager(char* list_file, uint id, uint workers, bool use_flock, uint time_limit, uint mem_limit) {
+  struct rlimit cpu, mem;
+  cpu.rlim_cur = time_limit;
+  cpu.rlim_max = time_limit;
+  mem.rlim_cur = mem_limit;
+  mem.rlim_max = mem_limit;
+  setrlimit(RLIMIT_CPU, &cpu);
+  setrlimit(RLIMIT_AS,  &mem);
 
-  wait(NULL);
-  int ipc = open("ipc", O_RDONLY, 0644), ret;
-  lseek(ipc, id * sizeof(int), 1);
-  read(ipc, &ret, sizeof(int));
-
-  exit(ret);
+  worker(list_file, id, workers, use_flock);
 }
