@@ -17,7 +17,7 @@ C_file_path[PATH_MAX];
 
 void worker(char* list_file, uint id, uint workers, bool use_flock) {
   FILE* list = fopen(list_file, "r");
-  int multiplied = 0;
+  int multiplied = 0, tmp;
   int ipc = open("ipc", O_CREAT | O_RDWR, 0644);
   lseek(ipc, id * sizeof(int), SEEK_SET);
   write(ipc, &multiplied, sizeof(int));
@@ -50,11 +50,15 @@ void worker(char* list_file, uint id, uint workers, bool use_flock) {
     free_matrix(B);
     free_matrix(C);
     multiplied++;
+
+    tmp = multiplied << 1;
     lseek(ipc, id * sizeof(int), SEEK_SET);
-    write(ipc, &multiplied, sizeof(int));
+    write(ipc, &tmp, sizeof(int));
   }
 
-  exit(multiplied);
+  tmp = (multiplied << 1) | 1;
+  lseek(ipc, id * sizeof(int), SEEK_SET);
+  write(ipc, &tmp, sizeof(int));
 }
 
 void time_manager(char* list_file, uint id, uint workers, bool use_flock, uint time_limit) {

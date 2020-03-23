@@ -55,7 +55,7 @@ void worker(char* list_file, uint id, uint workers, bool use_flock) {
     write(ipc, &multiplied, sizeof(int));
   }
 
-  exit(multiplied);
+  exit((multiplied << 1) | 1);
 }
 
 void time_manager(char* list_file, uint id, uint workers, bool use_flock, uint time_limit, uint mem_limit) {

@@ -22,9 +22,19 @@ int main(int argc, char** argv) {
   for (int id = 0; id < processes; id++) 
     if (fork() == 0) time_manager(list_file, id, processes, use_flock, time_limit);
   
-  while((pid = wait(&status)) != -1) 
-    printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
+  bool all_ok = true;
+  while((pid = wait(&status)) != -1) {
+    int mult = WEXITSTATUS(status);
+    bool ok = mult & 1;
+    if (!ok) all_ok = false;
+    int time = mult >> 1;
+    printf("pid(%i)\tmultiplied(%i)\tok(%s)\n", pid, time, ok ? "true" : "false");
+  }
 
+  if (!all_ok) {
+    printf("Some process have reached their limits.");
+    return 0;
+  }
   if (use_flock) return 0;
 
   // merge files with paste
@@ -48,11 +58,13 @@ int main(int argc, char** argv) {
     fd = open(C_file_path, O_RDWR | O_CREAT | O_TRUNC, 0644);
     dup2(fd, out);
     if (fork() == 0) execvp("paste", argv);
+    wait(NULL);
     if (fork() == 0) execvp("rm", argv);
+    wait(NULL);
 
     for (int i = 1; i <= argc; i++) free(argv[i]);
     free(argv);
-    while(wait(NULL) != -1);
+
     dprintf(fd, "%11u\t%11u\n", rows, cols);
 
     close(fd);

@@ -17,10 +17,9 @@ long int usage_time(struct timeval * t){
 }
 
 void report_usage(struct rusage usage1, struct rusage usage2){
-  long int userTime = abs(usage_time(&usage2.ru_utime) - usage_time(&usage1.ru_stime));
-  long int systemTime = abs(usage_time(&usage2.ru_stime) - usage_time(&usage1.ru_stime));
-  printf("  user CPU time used: %lf\n", (double)userTime / 1000000);
-  printf("system CPU time used: %lf\n\n", (double)systemTime / 1000000);
+  long int user = abs(usage_time(&usage2.ru_utime) - usage_time(&usage1.ru_stime));
+  long int system = abs(usage_time(&usage2.ru_stime) - usage_time(&usage1.ru_stime));
+  printf("CPU:\t\tuser(%lf)\tsystem(%lf)\n\n", (double)user / 1000000, (double)system / 1000000);
 }
 
 int main(int argc, char** argv) {
@@ -36,12 +35,21 @@ int main(int argc, char** argv) {
   
   struct rusage usage1, usage2;
   getrusage(RUSAGE_CHILDREN, &usage1);
+  bool all_ok = true;
   while((pid = wait(&status)) != -1) {
     getrusage(RUSAGE_CHILDREN, &usage2);
-    printf("pid(%i) status(%i)\n", pid, WEXITSTATUS(status));
+    int mult = WEXITSTATUS(status);
+    bool ok = mult & 1;
+    if (!ok) all_ok = false;
+    int time = mult >> 1;
+    printf("pid(%i)\tmultiplied(%i)\tok(%s)\n", pid, time, ok ? "true" : "false");
     report_usage(usage1, usage2);
   }
 
+  if (!all_ok) {
+    printf("Some process have reached their limits.");
+    return 0;
+  }
   if (use_flock) return 0;
 
   // merge files with paste
