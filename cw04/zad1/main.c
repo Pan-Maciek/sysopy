@@ -12,32 +12,32 @@
 #define on(sig, fn) void ON_##sig fn
 #define no(sig) signal(sig, ON_##sig)
 #define no_block(sig) {\
-	struct sigaction act = {.sa_handler=ON_##sig, .sa_flags=SA_NODEFER};\
-	sigemptyset(&act.sa_mask);\
-	sigaction(sig, &act, NULL);}
+  struct sigaction act = {.sa_handler=ON_##sig, .sa_flags=SA_NODEFER};\
+  sigemptyset(&act.sa_mask);\
+  sigaction(sig, &act, NULL);}
 
 static DIR* dir;
 
 on(SIGTSTP, (int sig) {
   static bool wait = false;
-	if not (wait = !wait) return;
+  if not (wait = !wait) return;
   printf("\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakończenie programu.\n");
   pause();
 })
 
 on(SIGINT, (int sig) {
-	printf("\nOdebrano sygnał SIGINT.\n");
-	exit(0);
+  printf("\nOdebrano sygnał SIGINT.\n");
+  exit(0);
 })
 
 int main(int argc, char** argv) {
   no_block(SIGTSTP);
-	no(SIGINT);
+  no(SIGINT);
 
-	repeat {
-		dir = opendir(".");
-		foreach(entry, readdir(dir))
-			printf("%s\n", entry->d_name);
-		closedir(dir);
-	}
+  repeat {
+    dir = opendir(".");
+    foreach(entry, readdir(dir))
+      printf("%s\n", entry->d_name);
+    closedir(dir);
+  }
 }
