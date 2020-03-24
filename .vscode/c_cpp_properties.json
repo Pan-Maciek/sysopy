@@ -1,0 +1,13 @@
+{
+  "configurations": [{
+    "name": "WSL",
+    "intelliSenseMode": "gcc-x64",
+    "compilerPath": "/usr/bin/gcc",
+    "includePath": [ "${workspaceFolder}/**" ],
+    "defines": [
+      "__USE_POSIX",
+      "_GNU_SOURCE"
+    ]
+  }],
+  "version": 4
+}
