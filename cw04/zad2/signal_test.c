@@ -15,6 +15,8 @@
 #define opt_mask_i    3
 #define opt_pending_i 4
 
+static int sig, status;
+static pid_t pid;
 const struct option options[] = {
   {"signal" , required_argument, 0, 's'},
   {"ignore" , no_argument      , 0, 'i'},
@@ -24,15 +26,25 @@ const struct option options[] = {
   {0, 0, 0, 0}
 };
 
+void test_ignore() {
+  signal(sig, SIG_IGN);
+  if ((pid = fork()) == 0) {
+    raise(sig);
+    exit(EXIT_SUCCESS);
+  }
+  raise(sig);
+  wait(&status);
+  exit(status);
+}
+
 int main(int argc, char** argv) {
   struct sigaction act;
-  int sig;
   foreach_ref(int opt, getopt_long_only(argc, argv, "", options, &opt)) {
     switch (opt) {
       case(signal, sig = atoi(optarg));
       case(pending, {});
       case(handler, {});
-      case(ignore, {});
+      case(ignore, test_ignore());
       case(mask, {});
     }
   }

@@ -6,7 +6,7 @@ main:
 	$(cc) main.c -o main.out
 
 test_signal:
-	$(cc) test_signal.c -o test_sig.out
+	$(cc) signal_test.c -o sig_test.out
 
 clean:
 	rm -Rf *.out
