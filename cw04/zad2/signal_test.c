@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <wait.h>
 #include <getopt.h>
+#include <stdbool.h>
 
 #define foreach_ref(var, f) for (var; f >= 0;)
 #define case(name, code) case opt_##name##_i: code; break
@@ -14,9 +15,11 @@
 #define opt_handler_i 2
 #define opt_mask_i    3
 #define opt_pending_i 4
+#define child_ok ((status < 9 && WEXITSTATUS(status) == EXIT_SUCCESS) ? 2 : 0)
+#define ok 1
 
 static int sig, status;
-static pid_t pid;
+bool parent_ok = false;
 const struct option options[] = {
   {"signal" , required_argument, 0, 's'},
   {"ignore" , no_argument      , 0, 'i'},
@@ -28,22 +31,33 @@ const struct option options[] = {
 
 void test_ignore() {
   signal(sig, SIG_IGN);
-  if ((pid = fork()) == 0) {
+  if (fork() == 0) {
     raise(sig);
     exit(EXIT_SUCCESS);
   }
+  waitpid(WAIT_ANY, &status, WUNTRACED);
   raise(sig);
-  wait(&status);
-  exit(status);
+  exit(ok | child_ok);
+}
+
+void sig_handler(int _) { parent_ok = true; }
+void test_handler() {
+  signal(sig, sig_handler);
+  if (fork() == 0) {
+    raise(sig);
+    exit(parent_ok ? EXIT_SUCCESS : EXIT_FAILURE);
+  }
+  waitpid(WAIT_ANY, &status, WUNTRACED);
+  raise(sig);
+  exit(parent_ok | child_ok);
 }
 
 int main(int argc, char** argv) {
-  struct sigaction act;
   foreach_ref(int opt, getopt_long_only(argc, argv, "", options, &opt)) {
     switch (opt) {
       case(signal, sig = atoi(optarg));
       case(pending, {});
-      case(handler, {});
+      case(handler, test_handler());
       case(ignore, test_ignore());
       case(mask, {});
     }
