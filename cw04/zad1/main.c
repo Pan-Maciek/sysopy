@@ -21,12 +21,14 @@ static DIR* dir;
 on(SIGTSTP, (int sig) {
   static bool wait = false;
   if not (wait = !wait) return;
-  printf("\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakończenie programu.\n");
+  static const char message[] = "\nOczekuję na CTRL+Z - kontynuacja albo CTR+C - zakończenie programu.\n";
+  write(STDOUT_FILENO, message, sizeof(message));
   pause();
 })
 
 on(SIGINT, (int sig) {
-  printf("\nOdebrano sygnał SIGINT.\n");
+  static const char message[] = "\nOdebrano sygnał SIGINT.\n";
+  write(STDERR_FILENO, message, sizeof(message));
   exit(0);
 })
 
