@@ -9,8 +9,16 @@ catcher: catcher.c
 	$(cc) catcher.c -o catcher.out
 
 test: all
-	./catcher.out&
-	./sender.out `pidof catcher.out` 1000
+	@echo "kill:"
+	@./catcher.out kill&
+	@./sender.out `pidof catcher.out` 1000 kill
+	@echo "sigqueue:"
+	@./catcher.out sigqueue&
+	@./sender.out `pidof catcher.out` 1000 sigqueue
+	@echo "sigrt:"
+	@./catcher.out sigrt&
+	@./sender.out `pidof catcher.out` 1000 sigrt
+
 
 clean:
 	rm -Rf *.out

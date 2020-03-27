@@ -3,28 +3,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <string.h>
 
-int usr1_count = 0;
 pid_t pid;
+#define repeat(n) for (int i = 0; i < n; i++)
 bool wait = true;
-void on_sigusr1(int _) { usr1_count++; }
-void on_sigusr2(int sig, siginfo_t * info, void * ucontext) {
-  printf("recived: %d\n", usr1_count);
+
+int recived = 0;
+void on_sig1(int _) { recived++; }
+void on_sig2(int sig, siginfo_t * info, void * ucontext) {
+  printf("[catcher] recived: %d\n", recived);
   pid = info->si_pid;
   wait = false;
 }
-int main() {
-  signal(SIGUSR1, on_sigusr1);
+
+union sigval val = {.sival_ptr=NULL};
+int main(int _, char** argv) {
+  bool use_sigrt = strcmp(argv[1], "sigrt") == 0;
+  bool use_sigqueue = strcmp(argv[1], "sigqueue") == 0;
+  bool use_kill = strcmp(argv[1], "kill") == 0;
+
+  int SIG1 = use_sigrt ? SIGRTMIN : SIGUSR1;
+  int SIG2 = use_sigrt ? SIG1 + 1 : SIGUSR2;
+
+  signal(SIG1, on_sig1);
   struct sigaction act;
   act.sa_flags = SA_SIGINFO;
-  act.sa_sigaction = on_sigusr2;
-  sigaction(SIGUSR2, &act, NULL);
+  act.sa_sigaction = on_sig2;
+  sigaction(SIG2, &act, NULL);
 
   printf("%d\n", getpid());
 
   while(wait);
 
-  for (int i = 0; i < usr1_count; i++)
-    kill(pid, usr1_count);
-  kill(pid, SIGUSR2);
+  if (use_kill || use_sigrt) {
+    repeat(recived) kill(pid, SIG1);
+    kill(pid, SIG2);
+  }
+  else if (use_sigqueue) {
+    repeat(recived) sigqueue(pid, SIG1, val);
+    sigqueue(pid, SIG2, val);
+  }
+
 }
