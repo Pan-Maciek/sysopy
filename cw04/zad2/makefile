@@ -7,6 +7,7 @@ main: main.c
 
 test_signal: signal_test.c
 	$(cc) signal_test.c -o sig_test.out
+	$(cc) exec.c -o exec.out
 
 test: all
 	./main.out
