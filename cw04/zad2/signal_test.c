@@ -16,10 +16,12 @@
 #define opt_mask_i    3
 #define opt_pending_i 4
 #define child_ok ((status < 9 && WEXITSTATUS(status) == EXIT_SUCCESS) ? 2 : 0)
-#define ok 1
+#define PARENT_OK SIGUSR1
+#define CHILD_OK SIGUSR2
 
 static int sig, status;
 bool parent_ok = false;
+static pid_t ppid;
 const struct option options[] = {
   {"signal" , required_argument, 0, 's'},
   {"ignore" , no_argument      , 0, 'i'},
@@ -33,26 +35,25 @@ void test_ignore() {
   signal(sig, SIG_IGN);
   if (fork() == 0) {
     raise(sig);
-    exit(EXIT_SUCCESS);
+    kill(ppid, CHILD_OK);
   }
   waitpid(WAIT_ANY, &status, WUNTRACED);
   raise(sig);
-  exit(ok | child_ok);
+  kill(ppid, PARENT_OK);
 }
 
-void sig_handler(int _) { parent_ok = true; }
+int sig_handeler_success = CHILD_OK;
+void sig_handler(int _) { kill(ppid, sig_handeler_success); }
 void test_handler() {
   signal(sig, sig_handler);
-  if (fork() == 0) {
-    raise(sig);
-    exit(parent_ok ? EXIT_SUCCESS : EXIT_FAILURE);
-  }
+  if (fork() == 0) raise(sig);
+  sig_handeler_success = PARENT_OK;
   waitpid(WAIT_ANY, &status, WUNTRACED);
   raise(sig);
-  exit(parent_ok | child_ok);
 }
 
 int main(int argc, char** argv) {
+  ppid = getppid();
   foreach_ref(int opt, getopt_long_only(argc, argv, "", options, &opt)) {
     switch (opt) {
       case(signal, sig = atoi(optarg));
