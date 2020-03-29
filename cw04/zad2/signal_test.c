@@ -5,13 +5,10 @@
 #include <unistd.h>
 #include <wait.h>
 #include <getopt.h>
-#include <stdbool.h>
+#include "ipc.h"
 
 #define foreach_ref(var, f) for (var; f >= 0;)
 #define case(name, code) case opt_##name##_i: code; break
-
-#define PARENT_OK SIGUSR1
-#define CHILD_OK  SIGUSR2
 #define exec(EXE, args...) execl(EXE, EXE, args, NULL);
 
 static int sig;

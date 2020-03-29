@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#define CHILD_OK SIGUSR2
+#include "ipc.h"
 
 void failure_handeler(int _) { _exit(0); }
 int main(int _, char** argv) { 
