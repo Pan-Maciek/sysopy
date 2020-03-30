@@ -12,14 +12,14 @@ int main(int argc, char** argv) {
 
   if (use_kill or use_sigrt) {
     repeat(sig_usr1_total) kill(pid, SIG1);
-    kill(pid, SIG2);
+    then kill(pid, SIG2);
   }
   else if (use_sigqueue) {
     repeat(sig_usr1_total) sigqueue(pid, SIG1, val);
-    sigqueue(pid, SIG2, val);
+    then sigqueue(pid, SIG2, val);
   }
 
-  recive then 
-    if (use_sigqueue)  printf("[sender]  recived: %d (catcher %d)\n", recived, sent);
-    else printf("[sender]  recived: %d\n", recived);
+  receive then 
+    if (use_sigqueue)  printf("[sender]  received: %d (catcher %d)\n", received, sent);
+    else printf("[sender]  received: %d\n", received);
 }

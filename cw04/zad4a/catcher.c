@@ -8,15 +8,15 @@ int main(int argc, char** argv) {
   if (argc < 3) printf("%d\n", getpid());
 
   init(use_sigrt);
-  recive then printf("[catcher] recived: %d\n", recived);
+  receive then printf("[catcher] received: %d\n", received);
 
   if (use_kill or use_sigrt) {
-    repeat(recived) kill(pid, SIG1);
-    kill(pid, SIG2);
+    repeat(received) kill(pid, SIG1);
+    then kill(pid, SIG2);
   }
   else if (use_sigqueue) {
-    repeat(recived) sigqueue(pid, SIG1, val);
-    val.sival_int = recived;
-    sigqueue(pid, SIG2, val);
+    repeat(received) sigqueue(pid, SIG1, val); 
+    val.sival_int = received;
+    then sigqueue(pid, SIG2, val);
   }
 }
