@@ -68,6 +68,7 @@ void test_pending() {
   raise(sig);
   sigset_t mask;
   if (fork() == 0) {
+    raise(sig);
     if (use_exec) exec("./exec.out", "-p", itoa(sig), itoa(ppid));
     sigpending(&mask);
     if (sigismember(&mask, sig)) 
