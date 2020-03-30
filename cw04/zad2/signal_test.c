@@ -32,13 +32,13 @@ void test_ignore() {
   kill(ppid, PARENT_OK);
 }
 
-int sig_handeler_success = CHILD_OK;
-void sig_handler(int _) { kill(ppid, sig_handeler_success); }
+int sig_handler_success = CHILD_OK;
+void sig_handler(int _) { kill(ppid, sig_handler_success); }
 void test_handler() {
   signal(sig, sig_handler);
   if (fork() == 0) raise(sig);
   waitpid(WAIT_ANY, NULL, WUNTRACED);
-  sig_handeler_success = PARENT_OK;
+  sig_handler_success = PARENT_OK;
   raise(sig);
 }
 

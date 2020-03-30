@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "ipc.h"
 
-void failure_handeler(int _) { _exit(0); }
+void failure_handler(int _) { _exit(0); }
 int main(int _, char** argv) { 
   int sig = atoi(argv[2]);
   int ppid = atoi(argv[3]);
@@ -13,7 +13,7 @@ int main(int _, char** argv) {
     kill(ppid, CHILD_OK);
   }
   else if (strcmp(argv[1], "-m") == 0) {
-    signal(sig, failure_handeler);
+    signal(sig, failure_handler);
     raise(sig);
     kill(ppid, CHILD_OK);
   }
