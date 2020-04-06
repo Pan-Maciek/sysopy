@@ -18,18 +18,12 @@ test: generate
 	mkfifo "$(fifo)"
 	./producer.out "$(fifo)" "$(file)" $(buffsize) &
 	./customer.out "$(fifo)" "conf.txt" $(buffsize)
-	@rm -f "$(fifo)"
-	@diff test.txt <(echo $$(cat conf.txt | sed -E 's/^#[0-9]+#//g' | tr -d '\n')) > /dev/null && echo 'test passed' || echo 'test failed'
+	@diff -w test.txt <(echo $$(sed -E 's/^#[0-9]+#//g' conf.txt)) > /dev/null && echo 'test passed' || echo 'test failed'
 
-testmany: SHELL:=/bin/bash
 testmany: generate
 	@rm -f "$(fifo)"
-	mkfifo "$(fifo)"
-	for i in {1..10}; do\
-		sleep $$[ ( $$RANDOM % 10 )  + 1 ]s && ./producer.out "$(fifo)" "$(file)" $(buffsize) & \
-	done
-	./customer.out "$(fifo)" "conf.txt" $(buffsize)
-	@rm -f "$(fifo)"
+	$(cc) tester.c -o tester.out
+	./tester.out
 
 generate: all
 	# generate random alphanumeric string
