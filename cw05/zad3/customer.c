@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
   FILE* file = fopen(argv[2], "w+");
   int N = atoi(argv[3]), read;
 
-  char* buffer = calloc(N, sizeof(char));
+  char* buffer = malloc(N * sizeof(char));
   while((read = fread(buffer, sizeof(char), N, fifo)) > 0) {
     fwrite(buffer, sizeof(char), read, file);
     fflush(file);

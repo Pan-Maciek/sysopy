@@ -10,7 +10,6 @@ int main(int argc, char** argv) {
   srand(time(0));
 
   char* buffer = calloc(N + 1, sizeof(char));
-  buffer[N] = 0;
   pid_t pid = getpid();
   while((read = fread(buffer, sizeof(char), N, file)) > 0) {
     sleep(rand() % 5 + 1);
