@@ -21,8 +21,7 @@ char **parse(char *line) {
   int i = 0;
   while (line != NULL && i < MAX_ARGS) {
     char *arg = strsep(&line, " \n");
-    if (*arg)
-      elements[i++] = arg;
+    if (*arg) elements[i++] = arg;
   }
 
   while (i < MAX_ARGS)
@@ -32,16 +31,15 @@ char **parse(char *line) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2)
-    return 1;
+  if (argc != 2) return 1;
   FILE *commands = fopen(argv[1], "r");
 
   int current[2], previous[2] = {-1, -1};
   char *line = NULL, *process_info;
-  size_t bsize = 0;
-#define last line == NULL
+  #define last line == NULL
+  size_t line_len = 0;
 
-  while (getline(&line, &bsize, commands) > 0) {
+  while (getline(&line, &line_len, commands) > 0) {
     while ((process_info = strsep(&line, "|")) != NULL) {
       pipe(current);
       spawn(parse(process_info)) {
