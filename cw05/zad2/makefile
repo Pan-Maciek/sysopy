@@ -7,4 +7,4 @@ test: main
 	@./main.out makefile
 
 clean:
-	rm main.out
+	rm -f main.out
