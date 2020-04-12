@@ -2,11 +2,11 @@ cc = gcc -Wall -ggdb
 
 all: client server
 
-server: server.c
-	$(cc) server.c -o server.out
+server: server/* common/*
+	$(cc) server/main.c -o server.out
 
-client: client.c
-	$(cc) client.c -o client.out
+client: client/* common/*
+	$(cc) client/main.c -o client.out
 
 clean:
 	rm -f *.out
