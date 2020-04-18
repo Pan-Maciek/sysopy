@@ -1,28 +1,31 @@
+#include <stdlib.h>
+
 #include "events.c"
-#include "../common/eventloop.h"
 
 qid_t server_qid;
 
-void finish() {
-    for (int i = 0; i < MAX_CLIENT_COUNT; i++) 
-        if (clients[i].qid) sendi(Stop, { server_qid }, clients[i].qid);
-    msgctl(server_qid, IPC_RMID, NULL);
+def init { // this code runs at the start of the program
+  key_t server_key = ftok(SERVER_KEY_PATHNAME, PROJECT_ID);
+  assert(server_key != -1);
+
+  server_qid = msgget(server_key, IPC_CREAT | IPC_EXCL | QUEUE_PERMISSIONS);
+  assert(server_qid != -1);
 }
 
-int main() {
-    key_t key = ftok(SERVER_KEY_PATHNAME, PROJECT_ID);
-    assert(key != -1);
+def finish { // this code runs atexit and on SIGINT
+  foreach(c, clients, 1, MAX_CLIENTS)
+    if (c->qid) send0(Stop, c->qid);
+  msgctl(server_qid, IPC_RMID, NULL);
+}
 
-    server_qid = msgget(key, IPC_CREAT | IPC_EXCL | QUEUE_PERMISSIONS);
-    assert(server_qid != -1);
-
-    atexit(finish);
-    signal(SIGINT, exit);
-
-    receive (server_qid) {
-        reg(Init)
-        reg(Stop)
-        reg(ListReq)
-        reg(Disconnect)
+def event_loop { // this code is run after init is done
+  repeat recive (server_qid) {
+    switch(msg.mtype) {
+      handle(Init)
+      handle(Connect)
+      handle(Disconnect)
+      handle(List)
+      handle(Stop)
     }
+  }
 }

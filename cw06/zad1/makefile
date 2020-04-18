@@ -1,11 +1,11 @@
 cc = gcc -Wall -ggdb
 
-all: client server
+all: build_client build_server
 
-server: server/* common/*
+build_server: server/*
 	$(cc) server/main.c -o server.out
 
-client: client/* common/*
+build_client: client/*
 	$(cc) client/main.c -o client.out
 
 clean:
