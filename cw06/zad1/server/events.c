@@ -9,7 +9,6 @@ on(Init) {
 }
 
 on(Stop) {
-  send0(Stop, payload->qid);
   return remove_client(payload->qid), Ok;
 }
 

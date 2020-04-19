@@ -1,15 +1,16 @@
 #ifndef common_h
 #define common_h
 
-#define SERVER_KEY_PATHNAME "/home/maciek/"
-#define PROJECT_ID 'M'
-#define QUEUE_PERMISSIONS 0620
-
 #include <assert.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pwd.h>
+
+#define SERVER_KEY_PATHNAME (getpwuid(getuid())->pw_dir)
+#define PROJECT_ID 'M'
+#define QUEUE_PERMISSIONS 0620
 
 #define def
 #define event_loop void event_loop_fn()

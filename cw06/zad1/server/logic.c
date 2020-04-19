@@ -39,6 +39,7 @@ void remove_client(qid_t qid) {
       clients[i].peer = NULL;
     }
   }
+  send0(Stop, qid);
 }
 
 void disconnect(qid_t qid) {

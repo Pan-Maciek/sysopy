@@ -26,12 +26,15 @@ typedef enum msg_t {
 
 #define parse(x) if (strcmp(c, #x) == 0) return x;
 enum msg_t parse_msg_t(char* c) {
+  if (strcmp(c, "exit") == 0) return Stop;
   parse(Stop)
   parse(Disconnect)
+  if (strcmp(c, "ls") == 0) return List;
   parse(List)
   parse(Connect)
   parse(Message)
   if (strcmp(c, "Send") == 0) return Message;
+  if (strcmp(c, "echo") == 0) return Message;
   return Error;
 }
 #undef parse

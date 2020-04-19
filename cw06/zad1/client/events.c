@@ -22,13 +22,13 @@ on(Disconnect) {
 on(List) {
   assert(payload->size > 0);
   print("id\tstate\n");
-  foreach (c, payload->clients, 0, payload->size)
-    if (c->id != client_id) {
-      printf(cdefault "%u\t", c->id);
-      if (c->id == peer_id) printf(green "peer\n");
-      else if (c->available) printf(cdefault "available\n");
-      else printf(red "not available\n");
-    }
+  foreach (c, payload->clients, 0, payload->size) {
+    printf(cdefault "%u\t", c->id);
+    if (c->id == peer_id) printf(green "peer\n");
+    else if (c->id == client_id) printf(yellow "you\n");
+    else if (c->available) printf(cdefault "available\n");
+    else printf(red "not available\n");
+  }
   print(cdefault);
   return Ok;
 }
