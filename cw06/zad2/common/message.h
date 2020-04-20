@@ -45,7 +45,10 @@ typedef enum error_t {
   Ok = 0,
   server_full,
   bad_id,
-  bad_qid
+  bad_qid,
+  occupied,
+  self_occupied,
+  self
 } error_t;
 
 struct message {
@@ -82,7 +85,8 @@ typedef struct message message;
 #define _SND_T response
 #define _RCV_T request
 enum error_t __error;
-#define handle(type) case type: if ((__error = on_##type(&msg.payload._RCV_T.type)) != Ok) { } break;
+void on_error(id_t id, enum error_t error);
+#define handle(type) case type: if ((__error = on_##type(&msg.payload._RCV_T.type)) != Ok) { on_error(msg.payload._RCV_T.type.id, __error); } break;
 #endif
 
 #define sendi(type, qid, init...) ({\
@@ -91,12 +95,6 @@ enum error_t __error;
   msg.payload._SND_T.type = payload;\
   mq_send(qid, (char*) &msg, sizeof payload + sizeof(enum msg_t), type);\
 })
-
-#ifdef SERVER
-void on_error(qid_t qid) {
-  sendi(Error, qid, server_full);
-}
-#endif
 
 #define send0(type, qid) ({\
   struct message msg = { type };\

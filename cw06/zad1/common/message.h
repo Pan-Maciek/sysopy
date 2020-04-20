@@ -43,7 +43,10 @@ typedef enum error_t {
   Ok = 0,
   server_full,
   bad_id,
-  bad_qid
+  bad_qid,
+  occupied,
+  self_occupied,
+  self
 } error_t;
 
 struct message {
@@ -72,6 +75,12 @@ struct message {
 };
 typedef struct message message;
 
+#define sendi(type, qid, init...) ({\
+  message msg = { type };\
+  typeof(msg.payload._SND_T.type) res = init;\
+  msg.payload._SND_T.type = res;\
+  msgsnd(qid, &msg, sizeof res, 0);\
+})
 #if defined(CLIENT)
 #define _SND_T request
 #define _RCV_T response
@@ -81,20 +90,11 @@ typedef struct message message;
 #define _RCV_T request
 enum error_t __error;
 #define handle(type) case type: if ((__error = on_##type(&msg.payload._RCV_T.type)) != Ok) { on_error(msg.payload._RCV_T.type.qid); } break;
-#endif
-
-#define sendi(type, qid, init...) ({\
-  message msg = { type };\
-  typeof(msg.payload._SND_T.type) res = init;\
-  msg.payload._SND_T.type = res;\
-  msgsnd(qid, &msg, sizeof res, 0);\
-})
-
-#ifdef SERVER
 void on_error(qid_t qid) {
-  sendi(Error, qid, server_full);
+  sendi(Error, qid, __error);
 }
 #endif
+
 
 #define send0(type, qid) ({ message msg = { type };\
   msgsnd(qid, &msg, 0, 0); })

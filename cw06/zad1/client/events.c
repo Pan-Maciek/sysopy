@@ -51,6 +51,9 @@ on(Error) { // on server error
     case server_full: printf("Server is full.\n"); break;
     case bad_id: printf("Bad id.\n"); break;
     case bad_qid: printf("Bad qid.\n"); break;
+    case self: printf("You can not connect to " yellow "yourself" cdefault ".\n"); break;
+    case self_occupied: printf("You are currently " red "occupied" cdefault ";" cyan " Disconnect " cdefault "first.\n"); break;
+    case occupied: printf("Client you'r trying to connect to is " red "occupied" cdefault "client.\n"); break;
   }
   return Ok;
 }

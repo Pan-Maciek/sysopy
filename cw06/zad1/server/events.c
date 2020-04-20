@@ -37,10 +37,13 @@ on(List) {
 on(Connect) {
   struct client* client = find_client_by_qid(payload->qid);
   if (client == NULL) return bad_qid;
+  if (client->peer != NULL) return self_occupied;
 
   struct client* peer = find_client_by_id(payload->peer_id);
   if (peer == NULL) return bad_id;
+  if (peer->peer != NULL) return occupied;
 
+  if (client == peer) return self;
   client->peer = peer;
   peer->peer = client;
 

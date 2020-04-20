@@ -40,10 +40,13 @@ on(List) {
 on(Connect) {
   struct client* client = find_client_by_id(payload->id);
   if (client == NULL) return bad_qid;
+  if (client->peer != NULL) return self_occupied;
 
   struct client* peer = find_client_by_id(payload->peer_id);
   if (peer == NULL) return bad_id;
+  if (peer->peer != NULL) return occupied;
 
+  if (client == peer) return self;
   client->peer = peer;
   peer->peer = client;
 
@@ -52,4 +55,8 @@ on(Connect) {
   return Ok;
 }
 
+void on_error(id_t id, enum error_t error) {
+  client* c = find_client_by_id(id);
+  if (c) sendi(Error, c->qid, error);
+}
 #endif
