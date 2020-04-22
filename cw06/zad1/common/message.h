@@ -56,7 +56,7 @@ struct message {
     union request {
       struct { qid_t qid; } Init, Stop, Disconnect, List;
       struct { qid_t qid; id_t peer_id; } Connect;
-      char Message[100];
+      char Message[MAX_MESSAGE];
     } request;
 
     union response {
