@@ -11,18 +11,14 @@
 #define spawn(exe) if (fork() == 0 && execlp(exe, exe, NULL) == -1) exit(1);
 
 int semid, shmid;
-void on_SIGINT(int _) {
+void at_exit() {
   shmctl(shmid, IPC_RMID, NULL);
   semctl(semid, 10, IPC_RMID, NULL);
 }
 
-void o() {
-  on_SIGINT(0);
-}
-
 int main() {
-  atexit(o);
-  signal(SIGINT, on_SIGINT);
+  atexit(at_exit);
+  signal(SIGINT, exit);
 
   key_t key = ftok("/home/maciek", 'B');
   shmid = shmget(key, sizeof(struct shared), IPC_CREAT | IPC_EXCL | PERMISSIONS);
@@ -36,7 +32,7 @@ int main() {
   assert(semid != -1);
   semop(semid, &sem_inc, 1);
 
-  for (int i = 0; i < 100; i++) {
+  repeat (10) {
     spawn("./worker1.out");
     spawn("./worker2.out");
     spawn("./worker3.out");

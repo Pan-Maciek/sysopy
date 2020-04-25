@@ -13,24 +13,16 @@ worker {
   int semid = semget(key, 0, PERMISSIONS);
   assert(semid != -1);
 
-  repeat {
+  loop {
     using(semid) {
       if (shared->unused == 0)
         continue;
-      int size = rand() % 10;
-      package *package = NULL;
-      for (int i = 0; i < MAX_PACKAGES; i++)
-        if (shared->packages[i].status == unused) {
-          package = shared->packages + i;
-          break;
-        }
-      shared->unused -= 1;
-      shared->recived += 1;
-      package->status = recived;
-      package->size = size;
+      package *package = find(shared, status == unused);
+      update(shared, package, unused, recived);
+      package->size = rand() % 10;
       log("Dodałem liczbę: %d. Liczba zamówień do przygotowania: %d, Liczba "
           "zamówień do wyslania: %d",
-          size, shared->recived, shared->processed);
+          package->size, shared->recived, shared->processed);
     }
     sleep(1);
   }

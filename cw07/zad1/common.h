@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 #include <assert.h>
-#include <wait.h>
 #include <errno.h>
 #include <string.h>
+#include <wait.h>
 
 enum package_status {
   unused = 0,
@@ -36,7 +36,24 @@ struct sembuf sem_dec = {1, -1, SEM_UNDO};
 #define using(semid)                                                           \
   for (int x = 1; x && (semop(semid, &sem_dec, 1), 1);                         \
        x = (semop(semid, &sem_inc, 1), 0))
-#define repeat for (;;)
+#define loop for (;;)
+#define repeat(n) for (int i = 0; i < n; i++)
+#define find(mem, x)                                                           \
+  ({                                                                           \
+    struct package *y;                                                         \
+    for (int i = 0; i < MAX_PACKAGES; i++)                                     \
+      if (mem->packages[i].x) {                                                \
+        y = mem->packages + i;                                                 \
+        break;                                                                 \
+      }                                                                        \
+    y;                                                                         \
+  })
+#define update(shared, package, from, to)                                      \
+  {                                                                            \
+    shared->from -= 1;                                                         \
+    shared->to += 1;                                                           \
+    package->status = to;                                                      \
+  }
 
 time_t timer;
 char buffer[26];
