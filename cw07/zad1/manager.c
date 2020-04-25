@@ -24,7 +24,7 @@ int main() {
   shmid = shmget(key, sizeof(struct shared), IPC_CREAT | IPC_EXCL | PERMISSIONS);
   assert(shmid != -1);
 
-  struct shared* shared = shmat(shmid, NULL, 0);
+  shared = shmat(shmid, NULL, 0);
   assert(shared != NULL);
   shared->unused = MAX_PACKAGES;
 
@@ -32,11 +32,9 @@ int main() {
   assert(semid != -1);
   semop(semid, &sem_inc, 1);
 
-  repeat (10) {
-    spawn("./worker1.out");
-    spawn("./worker2.out");
-    spawn("./worker3.out");
-  }
+  repeat (10) spawn("./worker1.out");
+  repeat (10)  spawn("./worker2.out");
+  repeat (10)  spawn("./worker3.out");
   
   while(wait(NULL) != -1);
 

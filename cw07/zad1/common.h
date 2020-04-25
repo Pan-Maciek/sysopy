@@ -28,7 +28,7 @@ typedef struct package {
 struct shared {
   int unused, recived, processed;
   struct package packages[MAX_PACKAGES];
-};
+} *shared;
 
 struct sembuf sem_wait = {1, 0, SEM_UNDO};
 struct sembuf sem_inc = {1, 1, SEM_UNDO};
@@ -66,5 +66,3 @@ struct tm *tm_info;
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);                        \
     printf("(%d %s) " x "\n", getpid(), buffer, args);                         \
   }
-
-#define worker int main(int argc, char **argv)
