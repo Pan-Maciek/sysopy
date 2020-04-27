@@ -20,7 +20,7 @@ int main() {
   atexit(at_exit);
   signal(SIGINT, exit);
 
-  key_t key = ftok("/home/maciek", 'B');
+  key_t key = ftok(HOME_PATH, PROJECT_ID);
   shmid = shmget(key, sizeof(struct shared), IPC_CREAT | IPC_EXCL | PERMISSIONS);
   assert(shmid != -1);
 
@@ -33,8 +33,8 @@ int main() {
   semop(semid, &sem_inc, 1);
 
   repeat (10) spawn("./worker1.out");
-  repeat (10)  spawn("./worker2.out");
-  repeat (10)  spawn("./worker3.out");
+  repeat (10) spawn("./worker2.out");
+  repeat (10) spawn("./worker3.out");
   
   while(wait(NULL) != -1);
 
