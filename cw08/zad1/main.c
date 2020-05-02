@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
       repeat (thread_count) {
         thread_ret_value* ret;
         p_join(threads[i], &ret);
-        printf("thread(%d) took(%d) microseconds\n", i, ret->time);
+        printf("thread(%lu) took(%d microseconds)\n", threads[i], ret->time);
         free(ret);
       }
     } else {
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         thread_ret_value* ret;
         p_join(threads[i], &ret);
         repeat (SHADES) hist[i] += ret->fragment[i];
-        printf("thread(%d) took(%d) microseconds\n", i, ret->time);
+        printf("thread(%lu) took(%d microseconds)\n", threads[i], ret->time);
         free(ret->fragment);
         free(ret);
       }
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   }
 
   repeat (SHADES) fprintf(file_out, "%d %u\n", i, hist[i]);
-  printf("total time(%d) microseconds", time);
+  printf("total time(%d microseconds)\n", time);
   fclose(file_out);
   return 0;
 }
