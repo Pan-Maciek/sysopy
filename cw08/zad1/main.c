@@ -28,16 +28,16 @@ enum thread_fn parse(char* arg) {
   return -1;
 }
 
-thread_ret_value* sign_fn(thread_start_info* info) {
+thread_ret_value* scan_for_values(thread_start_info* info) {
   measure_time {
     shade** data = info->img->data, value;
     int width = info->img->width, height = info->img->height;
     int min = info->start, max = info->stop;
 
     for (int x = 0; x < width; ++x) {
-      shade* coll = data[x];
+      shade* col = data[x];
       for (int y = 0; y < height; ++y) {
-        value = coll[y];
+        value = col[y];
         if (min <= value && value < max)
           ++hist[value];
       }
@@ -50,7 +50,7 @@ thread_ret_value* sign_fn(thread_start_info* info) {
   return ret;
 }
 
-thread_ret_value* block_fn(thread_start_info* info) {
+thread_ret_value* scan_by_cols(thread_start_info* info) {
   unsigned int*  count;
   measure_time {
     shade** data = info->img->data;
@@ -59,9 +59,9 @@ thread_ret_value* block_fn(thread_start_info* info) {
     int stop = info->stop, step = info->step;
 
     for (int x = info->start; x < stop; x += step) {
-      shade* coll = data[x];
+      shade* col = data[x];
       for (int y = 0; y < height; y++)
-        ++count[coll[y]];
+        ++count[col[y]];
     }
   }
 
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     if (fn == sign) {
       repeat (thread_count) {
         thread_start_info info = { img, chunk * i, 1, chunk * (i + 1) };
-        p_creat(&threads[i], sign_fn, info);
+        p_creat(&threads[i], scan_for_values, info);
       }
       repeat (thread_count) {
         thread_ret_value* ret;
@@ -105,12 +105,12 @@ int main(int argc, char** argv) {
       if (fn == block) {
         repeat (thread_count) {
           thread_start_info info = { img, chunk * i, 1, min(chunk * (i + 1), problem_size) };
-          p_creat(&threads[i], block_fn, info);
+          p_creat(&threads[i], scan_by_cols, info);
         }
       } else if (fn == interleaved) {
         repeat (thread_count) {
           thread_start_info info = { img, i, thread_count, img->width };
-          p_creat(&threads[i], block_fn, info);
+          p_creat(&threads[i], scan_by_cols, info);
         }
       }
 
