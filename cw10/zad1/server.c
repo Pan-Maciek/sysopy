@@ -48,6 +48,7 @@ struct client {
   char nickname[16];
   char symbol;
   struct game_state* game_state;
+  bool responding;
 } clients[MAX_CONN];
 client* waiting_client = NULL;
 
@@ -147,34 +148,42 @@ void on_client_message(client* client) {
     else delete_client(client); // username taken
     pthread_mutex_unlock(&mutex);
   }
-  else if (client->state == playing) {
+  else {
     message msg;
     read(client->fd, &msg, sizeof msg);
-    int move = msg.payload.move;
-    if (msg.type != msg_move) return;
-    if (client->game_state->move == client->symbol 
-      && client->game_state->board[move] == '-'
-      && 0 <= move && move <= 8) {
-      client->game_state->board[move] = client->symbol;
-      client->game_state->move = client->peer->symbol;
-      
-      send_gamestate(client);
-      send_gamestate(client->peer);
-      if (check_game(client)) {
-        msg.type = msg_win;
-        msg.payload.win = client->symbol;
-      }
-      else if (check_draw(client)) {
-        msg.type = msg_win;
-        msg.payload.win = '-';
-      }
-      if (msg.type == msg_win) {
-        client->peer->peer = NULL;
-        write(client->peer->fd, &msg, sizeof msg);
-        write(client->fd, &msg, sizeof msg);
-      }
-    } 
-    else send_gamestate(client);
+    if (msg.type == msg_ping) {
+      printf("Pong\n");
+      pthread_mutex_lock(&mutex);
+      client->responding = true;
+      pthread_mutex_unlock(&mutex);
+    }
+    else if (msg.type == msg_move) {
+      int move = msg.payload.move;
+      if (msg.type != msg_move) return;
+      if (client->game_state->move == client->symbol 
+        && client->game_state->board[move] == '-'
+        && 0 <= move && move <= 8) {
+        client->game_state->board[move] = client->symbol;
+        client->game_state->move = client->peer->symbol;
+        
+        send_gamestate(client);
+        send_gamestate(client->peer);
+        if (check_game(client)) {
+          msg.type = msg_win;
+          msg.payload.win = client->symbol;
+        }
+        else if (check_draw(client)) {
+          msg.type = msg_win;
+          msg.payload.win = '-';
+        }
+        if (msg.type == msg_win) {
+          client->peer->peer = NULL;
+          write(client->peer->fd, &msg, sizeof msg);
+          write(client->fd, &msg, sizeof msg);
+        }
+      } 
+      else send_gamestate(client);
+    }
   }
 }
 
@@ -196,8 +205,27 @@ client* new_client(int client_fd) {
 
   client->fd = client_fd;
   client->state = init;
+  client->responding = true;
   pthread_mutex_unlock(&mutex);
   return client;
+}
+
+void* ping(void* _) {
+  static message msg = { .type = msg_ping };
+  loop {
+    sleep(10);
+    pthread_mutex_lock(&mutex);
+    for (int i = 0; i < MAX_CONN; i++) {
+      if (clients[i].state != empty) {
+        if (clients[i].responding) {
+          clients[i].responding = false;
+          write(clients[i].fd, &msg, sizeof msg);
+        }
+        else delete_client(&clients[i]);
+      }
+    }
+    pthread_mutex_unlock(&mutex);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -220,6 +248,9 @@ int main(int argc, char** argv) {
 
   int web_sock = safe (socket(AF_INET, SOCK_STREAM, 0));
   init_socket(web_sock, &web_addr, sizeof web_addr);
+
+  pthread_t ping_thread;
+  pthread_create(&ping_thread, NULL, ping, NULL);
 
   struct epoll_event events[10];
   loop {

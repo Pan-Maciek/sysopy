@@ -147,10 +147,14 @@ int main(int argc, char** argv) {
           write(sock, &msg, sizeof msg);
         }
       } else {
-        if (events[i].events & EPOLLHUP) exit(0);
+        if (events[i].events & EPOLLHUP) {
+          print("\033[8;0H\033[J\r Disconnected X_x\n\n");
+          exit(0);
+        }
         message msg;
         read(sock, &msg, sizeof msg);
-        if (msg.type == msg_ping) write(sock, &msg, sizeof msg);
+        if (msg.type == msg_ping) 
+          write(sock, &msg, sizeof msg);
         else if (msg.type == msg_state) {
           memcpy(&state.game, &msg.payload.state, sizeof state.game);
           render_update();
