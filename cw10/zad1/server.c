@@ -83,7 +83,6 @@ int cell_coord(int x, int y) {
   return x + y * 3;
 }
 
-
 bool check_game(client* client) {
   static int win[8][3] = {
     {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, {0, 3, 6},
@@ -98,6 +97,13 @@ bool check_game(client* client) {
         return true;
   }
   return false;
+}
+
+bool check_draw(client* client) {
+  for (int i = 0; i < 9; i++)
+    if (client->game_state->board[i] == '-')
+      return false;
+  return true;
 }
 
 void join_clients(client* client1, client* client2) {
@@ -145,6 +151,7 @@ void on_client_message(client* client) {
     message msg;
     read(client->fd, &msg, sizeof msg);
     int move = msg.payload.move;
+    if (msg.type != msg_move) return;
     if (client->game_state->move == client->symbol 
       && client->game_state->board[move] == '-'
       && 0 <= move && move <= 8) {
@@ -156,8 +163,15 @@ void on_client_message(client* client) {
       if (check_game(client)) {
         msg.type = msg_win;
         msg.payload.win = client->symbol;
-        write(client->fd, &msg, sizeof msg);
+      }
+      else if (check_draw(client)) {
+        msg.type = msg_win;
+        msg.payload.win = '-';
+      }
+      if (msg.type == msg_win) {
+        client->peer->peer = NULL;
         write(client->peer->fd, &msg, sizeof msg);
+        write(client->fd, &msg, sizeof msg);
       }
     } 
     else send_gamestate(client);

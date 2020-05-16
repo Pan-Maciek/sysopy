@@ -53,7 +53,7 @@ struct state {
 } state;
 
 static const char board[] = 
-"\033[0;0H\033[J\033[90m\n\n"
+"\033[0;0H\033[J\033[90m\n"
 "   1 │ 2 │ 3    you\033[0m (%s) %s\n\033[90m"
 "  ───┼───┼───      \033[0m (%s) %s\n\033[90m"
 "   4 │ 5 │ 6 \n"
@@ -67,13 +67,13 @@ void draw_initial_state() {
 }
 
 void cell(int x, int y, char* text) {
-  dprintf(STDOUT_FILENO, "\033[s\033[%d;%dH%s\033[u", y * 2 + 3, x * 4 + 4, text);
+  dprintf(STDOUT_FILENO, "\033[s\033[%d;%dH%s\033[u", y * 2 + 2, x * 4 + 4, text);
 }
 
 void render_footer() {
   if (state.game.move != state.symbol) 
-    print("\033[9;0H\033[J\r [ ] \033[33mWait for your move.\r\033[0m\r\033[2C");
-  else print("\033[9;0H\033[J\r [ ]\033[J\r\033[2C");
+    print("\033[8;0H\033[J\r [ ] \033[33mWait for your move.\r\033[0m\r\033[2C");
+  else print("\033[8;0H\033[J\r [ ]\033[J\r\033[2C");
 }
 
 void render_update() {
@@ -129,7 +129,12 @@ int main(int argc, char** argv) {
     int nread = safe (epoll_wait(epoll_fd, events, 2, 1));
     repeat(nread) {
       if (events[i].data.fd == STDIN_FILENO) {
-        scanf("%d", &c);
+        if (scanf("%d", &c) != 1) {
+          char x;
+          while ((x = getchar()) != EOF && x != '\n'); // skip invalid input
+          render_footer();
+          continue;
+        }
         render_footer();
         if (c < 1 || c > 9) continue;
         c -= 1;
@@ -150,8 +155,9 @@ int main(int argc, char** argv) {
           memcpy(&state.game, &msg.payload.state, sizeof state.game);
           render_update();
         } else if (msg.type == msg_win) {
-          if (msg.payload.win == state.symbol) printf("\r You won ^^\33[J\n\n");
-          else printf("\r You lost T_T\n\n");
+          if (msg.payload.win == state.symbol) print("\033[8;0H\033[J\r You won ^.^\33[J\n\n");
+          else if (msg.payload.win == '-') print("\033[8;0H\033[J\r It's a draw O_o\33[J\n\n");
+          else print("\033[8;0H\033[J\r You lost T_T\n\n");
           close(sock);
           exit(0);
         }
