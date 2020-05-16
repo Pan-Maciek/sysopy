@@ -130,7 +130,6 @@ void on_client_message(client* client) {
     }
     else if (msg.type == msg_move) {
       int move = msg.payload.move;
-      if (msg.type != msg_move) return;
       if (client->game_state->move == client->symbol 
         && client->game_state->board[move] == '-'
         && 0 <= move && move <= 8) {
