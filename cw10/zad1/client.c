@@ -1,36 +1,5 @@
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-
-#include <sys/epoll.h>
-
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
+#include "common.h"
 #include "message.h"
-
-#define safe(expr)                                                              \
-  ({                                                                            \
-    typeof(expr) __tmp = expr;                                                  \
-    if (__tmp == -1) {                                                          \
-      printf("%s:%d "#expr" failed: %s\n", __FILE__, __LINE__, strerror(errno));\
-      exit(EXIT_FAILURE);                                                       \
-    }                                                                           \
-    __tmp;                                                                      \
-  })
-#define loop for(;;)
-#define find(init, cond) ({ int index = -1;  for (init) if (cond) { index = i; break; } index; })
-#define repeat(n) for(int i = 0; i < n; i++)
-#define print(x) write(STDOUT_FILENO, x, sizeof(x))
 
 int connect_unix(char* path) {
   struct sockaddr_un addr;
@@ -41,6 +10,22 @@ int connect_unix(char* path) {
   int sock = safe (socket(AF_UNIX, SOCK_STREAM, 0));
   safe (connect(sock, (struct sockaddr*) &addr, sizeof addr));
 
+  return sock;
+}
+
+int connect_web(char* ipv4, int port) {
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  if (inet_pton(AF_INET, ipv4, &addr.sin_addr) <= 0) {
+    print("Invalid address\n");
+    exit(0);
+  }
+
+  int sock = safe (socket(AF_INET, SOCK_STREAM, 0));
+  safe (connect(sock, (struct sockaddr*) &addr, sizeof addr));
+   
   return sock;
 }
 
@@ -58,8 +43,7 @@ static const char board[] =
 "  ───┼───┼───      \033[0m (%s) %s\n\033[90m"
 "   4 │ 5 │ 6 \n"
 "  ───┼───┼───\n"
-"   7 │ 8 │ 9 \n"
-"\033[0m\n";
+"   7 │ 8 │ 9 \n\n\033[0m";
 void draw_initial_state() {
   dprintf(STDOUT_FILENO, board, 
     state.symbols[0], state.nicknames[0],
@@ -91,24 +75,17 @@ void render_update() {
 }
 
 int main(int argc, char** argv) {
+  int sock;
+  if (strcmp(argv[2], "web") == 0 && argc == 5) sock = connect_web(argv[3], atoi(argv[4]));
+  else if (strcmp(argv[2], "unix") == 0 && argc == 4) sock = connect_unix(argv[3]);
+  else {
+    print("Usage [nick] [web|unix] [ip port|path]\n");
+    exit(0);
+  }
+
   char* nickname = state.nicknames[0] = argv[1];
-
-  int sock = connect_unix("/tmp/sock");
-
   write(sock, nickname, strlen(nickname));
   
-  message msg;
-  read(sock, &msg, sizeof msg);
-
-  if (msg.type == msg_play) {
-    state.nicknames[1] = msg.payload.play.nickname;
-    state.symbols[1] = msg.payload.play.symbol == 'o' ? "\033[36mx\033[0m" : "\033[32mo\033[0m";
-    state.symbol = msg.payload.play.symbol;
-    state.symbols[0] = msg.payload.play.symbol == 'o' ? "\033[32mo\033[0m" : "\033[36mx\033[0m";
-    state.score[0] = state.score[1] = 0;
-    draw_initial_state();
-  } else exit(0);
-
   int epoll_fd = safe (epoll_create1(0));
   
   struct epoll_event stdin_event = { 
@@ -147,13 +124,29 @@ int main(int argc, char** argv) {
           write(sock, &msg, sizeof msg);
         }
       } else {
-        if (events[i].events & EPOLLHUP) {
-          print("\033[8;0H\033[J\r Disconnected X_x\n\n");
-          exit(0);
-        }
         message msg;
         read(sock, &msg, sizeof msg);
-        if (msg.type == msg_ping) 
+        if (msg.type == msg_wait) {
+          print("Waiting for an opponent\n");
+        } else if (msg.type == msg_play) {
+          state.nicknames[1] = msg.payload.play.nickname;
+          state.symbols[1] = msg.payload.play.symbol == 'o' ? "\033[36mx\033[0m" : "\033[32mo\033[0m";
+          state.symbol = msg.payload.play.symbol;
+          state.symbols[0] = msg.payload.play.symbol == 'o' ? "\033[32mo\033[0m" : "\033[36mx\033[0m";
+          state.score[0] = state.score[1] = 0;
+          draw_initial_state();
+        } else if (msg.type == msg_username_taken) {
+          print("This username is already taken\n");
+          close(sock);
+          exit(0);
+        } else if (msg.type == msg_server_full) {
+          print("Server is full\n");
+          close(sock);
+          exit(0);
+        } else if (events[i].events & EPOLLHUP) {
+          print("\033[8;0H\033[J\r Disconnected X_x\n\n");
+          exit(0);
+        } else if (msg.type == msg_ping) 
           write(sock, &msg, sizeof msg);
         else if (msg.type == msg_state) {
           memcpy(&state.game, &msg.payload.state, sizeof state.game);

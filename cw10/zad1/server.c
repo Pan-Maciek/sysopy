@@ -1,45 +1,12 @@
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-
-#include <sys/epoll.h>
-
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
+#include "common.h"
+#include "message.h"
 #include <pthread.h>
 
-#include "message.h"
-
-#define safe(expr)                                                              \
-  ({                                                                            \
-    typeof(expr) __tmp = expr;                                                  \
-    if (__tmp == -1) {                                                          \
-      printf("%s:%d "#expr" failed: %s\n", __FILE__, __LINE__, strerror(errno));\
-      exit(EXIT_FAILURE);                                                       \
-    }                                                                           \
-    __tmp;                                                                      \
-  })
-#define loop for(;;)
-#define find(init, cond) ({ int index = -1;  for (init) if (cond) { index = i; break; } index; })
-#define repeat(n) for(int i = 0; i < n; i++)
-
 #define MAX_CONN 16
-
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int epoll_fd;
-
-typedef struct client client;
 
 struct client {
   int fd;
@@ -49,9 +16,8 @@ struct client {
   char symbol;
   struct game_state* game_state;
   bool responding;
-} clients[MAX_CONN];
-client* waiting_client = NULL;
-
+} clients[MAX_CONN], *waiting_client = NULL;
+typedef struct client client;
 
 typedef struct event_data {
   enum event_type { socket_event, client_event } type;
@@ -141,18 +107,23 @@ void on_client_message(client* client) {
         else join_clients(waiting_client, client);
         waiting_client = NULL;
       } else {
+        message msg = { .type = msg_wait };
+        write(client->fd, &msg, sizeof msg);
         waiting_client = client;
         client->state = waiting;
       }
     } 
-    else delete_client(client); // username taken
+    else {
+      message msg = { .type = msg_username_taken };
+      write(client->fd, &msg, sizeof msg);
+      delete_client(client); // username taken
+    }
     pthread_mutex_unlock(&mutex);
   }
   else {
     message msg;
     read(client->fd, &msg, sizeof msg);
     if (msg.type == msg_ping) {
-      printf("Pong\n");
       pthread_mutex_lock(&mutex);
       client->responding = true;
       pthread_mutex_unlock(&mutex);
@@ -229,6 +200,10 @@ void* ping(void* _) {
 }
 
 int main(int argc, char** argv) {
+  if (argc != 3) {
+    print("Usage [port] [path]\n");
+    exit(0);
+  }
   int port = atoi(argv[1]);
   char* socket_path = argv[2];
 
@@ -261,6 +236,8 @@ int main(int argc, char** argv) {
         int client_fd = accept(data->payload.socket, NULL, NULL);
         client* client = new_client(client_fd);
         if (client == NULL) {
+          message msg = { .type = msg_server_full };
+          write(client_fd, &msg, sizeof msg);
           close(client_fd); 
           continue;
         }
