@@ -74,8 +74,14 @@ void render_update() {
   render_footer();
 }
 
+int sock;
+void on_SIGINT(int _) {
+  message msg = { .type = msg_disconnect };
+  write(sock, &msg, sizeof msg);
+  exit(0);
+}
+
 int main(int argc, char** argv) {
-  int sock;
   if (strcmp(argv[2], "web") == 0 && argc == 5) sock = connect_web(argv[3], atoi(argv[4]));
   else if (strcmp(argv[2], "unix") == 0 && argc == 4) sock = connect_unix(argv[3]);
   else {
@@ -83,6 +89,7 @@ int main(int argc, char** argv) {
     exit(0);
   }
 
+  signal(SIGINT, on_SIGINT);
   char* nickname = state.nicknames[0] = argv[1];
   write(sock, nickname, strlen(nickname));
   

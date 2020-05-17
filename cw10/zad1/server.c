@@ -127,8 +127,11 @@ void on_client_message(client* client) {
       pthread_mutex_lock(&mutex);
       client->responding = true;
       pthread_mutex_unlock(&mutex);
-    }
-    else if (msg.type == msg_move) {
+    } else if (msg.type == msg_disconnect) {
+      pthread_mutex_lock(&mutex);
+      delete_client(client);
+      pthread_mutex_unlock(&mutex);
+    } else if (msg.type == msg_move) {
       int move = msg.payload.move;
       if (client->game_state->move == client->symbol 
         && client->game_state->board[move] == '-'
