@@ -106,7 +106,9 @@ void on_client_message(client* client, message* msg) {
     pthread_mutex_unlock(&mutex);
   }
   else if (msg->type == msg_disconnect) {
+    pthread_mutex_lock(&mutex);
     delete_client(client);
+    pthread_mutex_unlock(&mutex);
   } else if (msg->type == msg_move) {
     int move = msg->payload.move;
     if (msg->type != msg_move) return;
