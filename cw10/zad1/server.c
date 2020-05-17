@@ -3,6 +3,7 @@
 #include <pthread.h>
 
 #define MAX_CONN 16
+#define PING_INTERVAL 20
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -25,6 +26,7 @@ typedef struct event_data {
 } event_data;
 
 void delete_client(client* client) {
+  printf("Deleting %s\n", client->nickname);
   if (client == waiting_client) waiting_client = NULL;
   if (client->peer) {
     client->peer->peer = NULL;
@@ -102,11 +104,14 @@ void on_client_message(client* client) {
     pthread_mutex_lock(&mutex);
     if (find(int i = 0; i < MAX_CONN; i++, i != j && strncmp(client->nickname, clients[i].nickname, sizeof clients->nickname) == 0) == -1) {
       client->nickname[nick_size] = '\0';
+      printf("New client %s\n", client->nickname);
       if (waiting_client) {
+        printf("Connecting %s with %s\n", client->nickname, waiting_client->nickname);
         if (rand() % 2 == 0) join_clients(client, waiting_client);
         else join_clients(waiting_client, client);
         waiting_client = NULL;
       } else {
+        printf("%s is waiting\n", client->nickname);
         message msg = { .type = msg_wait };
         write(client->fd, &msg, sizeof msg);
         waiting_client = client;
@@ -115,7 +120,9 @@ void on_client_message(client* client) {
     } 
     else {
       message msg = { .type = msg_username_taken };
+      printf("Nickname %s already taken\n", client->nickname);
       write(client->fd, &msg, sizeof msg);
+      strcpy(client->nickname, "new client");
       delete_client(client); // username taken
     }
     pthread_mutex_unlock(&mutex);
@@ -125,6 +132,7 @@ void on_client_message(client* client) {
     read(client->fd, &msg, sizeof msg);
     if (msg.type == msg_ping) {
       pthread_mutex_lock(&mutex);
+      printf("pong %s\n", client->nickname);
       client->responding = true;
       pthread_mutex_unlock(&mutex);
     } else if (msg.type == msg_disconnect) {
@@ -139,6 +147,7 @@ void on_client_message(client* client) {
         client->game_state->board[move] = client->symbol;
         client->game_state->move = client->peer->symbol;
         
+        printf("%s moved\n", client->nickname);
         send_gamestate(client);
         send_gamestate(client->peer);
         if (check_game(client)) {
@@ -150,6 +159,7 @@ void on_client_message(client* client) {
           msg.payload.win = '-';
         }
         if (msg.type == msg_win) {
+          printf("Game between %s and %s finised\n", client->nickname, client->peer->nickname);
           client->peer->peer = NULL;
           write(client->peer->fd, &msg, sizeof msg);
           write(client->fd, &msg, sizeof msg);
@@ -186,8 +196,9 @@ client* new_client(int client_fd) {
 void* ping(void* _) {
   static message msg = { .type = msg_ping };
   loop {
-    sleep(10);
+    sleep(PING_INTERVAL);
     pthread_mutex_lock(&mutex);
+    printf("Pinging clients\n");
     for (int i = 0; i < MAX_CONN; i++) {
       if (clients[i].state != empty) {
         if (clients[i].responding) {
@@ -229,6 +240,8 @@ int main(int argc, char** argv) {
   pthread_t ping_thread;
   pthread_create(&ping_thread, NULL, ping, NULL);
 
+  printf("Server listening on *:%d and '%s'\n", port, socket_path);
+
   struct epoll_event events[10];
   loop {
     int nread = safe (epoll_wait(epoll_fd, events, 10, -1));
@@ -238,6 +251,7 @@ int main(int argc, char** argv) {
         int client_fd = accept(data->payload.socket, NULL, NULL);
         client* client = new_client(client_fd);
         if (client == NULL) {
+          printf("Server is full\n");
           message msg = { .type = msg_server_full };
           write(client_fd, &msg, sizeof msg);
           close(client_fd); 

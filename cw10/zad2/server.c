@@ -3,6 +3,7 @@
 #include <pthread.h>
 
 #define MAX_CONN 16
+#define PING_INTERVAL 20
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -27,6 +28,7 @@ struct client {
 typedef struct client client;
 
 void delete_client(client* client) {
+  printf("Deleting %s\n", client->nickname);
   if (client == waiting_client) waiting_client = NULL;
   if (client->peer) {
     client->peer->peer = NULL;
@@ -102,6 +104,7 @@ void join_clients(client* client1, client* client2) {
 void on_client_message(client* client, message* msg) {
   if (msg->type == msg_ping) {
     pthread_mutex_lock(&mutex);
+    printf("pong %s\n", client->nickname);
     client->responding = true;
     pthread_mutex_unlock(&mutex);
   }
@@ -118,6 +121,7 @@ void on_client_message(client* client, message* msg) {
       client->game_state->board[move] = client->symbol;
       client->game_state->move = client->peer->symbol;
       
+        printf("%s moved\n", client->nickname);
         send_gamestate(client);
         send_gamestate(client->peer);
       if (check_game(client)) {
@@ -129,9 +133,11 @@ void on_client_message(client* client, message* msg) {
         msg->payload.win = '-';
       }
       if (msg->type == msg_win) {
+        printf("Game between %s and %s finised\n", client->nickname, client->peer->nickname);
         client->peer->peer = NULL;
-        safe (sendto(client->peer->sock, msg, sizeof msg, 0, (sa) &client->peer->addr, client->peer->addrlen));
-        safe (sendto(client->sock, msg, sizeof msg, 0, (sa) &client->addr, client->addrlen));
+        sendto(client->peer->sock, msg, sizeof msg, 0, (sa) &client->peer->addr, client->peer->addrlen);
+        sendto(client->sock, msg, sizeof msg, 0, (sa) &client->addr, client->addrlen);
+        delete_client(client);
       } 
     } 
     else send_gamestate(client);
@@ -155,16 +161,19 @@ void new_client(union addr* addr, socklen_t addrlen, int sock, char* nickname) {
     else if (strncmp(nickname, clients[i].nickname, sizeof clients->nickname) == 0) {
       pthread_mutex_unlock(&mutex);
       message msg = {.type = msg_username_taken };
+      printf("Nickname %s already taken\n", nickname);
       sendto(sock, &msg, sizeof msg, 0, (sa) addr, addrlen);
       return;
     }
   }
   if (empty_index == -1) {
     pthread_mutex_unlock(&mutex);
+    printf("Server is full\n");
     message msg = { .type = msg_server_full };
     sendto(sock, &msg, sizeof msg, 0, (sa) addr, addrlen);
     return;
   }
+  printf("New client %s\n", nickname);
   client* client = &clients[empty_index];
   memcpy(&client->addr, addr, addrlen);
   client->addrlen = addrlen;
@@ -175,10 +184,12 @@ void new_client(union addr* addr, socklen_t addrlen, int sock, char* nickname) {
   memset(client->nickname, 0, sizeof client->nickname);
   strncpy(client->nickname, nickname, sizeof client->nickname - 1);
   if (waiting_client) {
+    printf("Connecting %s with %s\n", client->nickname, waiting_client->nickname);
     if (rand() % 2 == 0) join_clients(client, waiting_client);
     else join_clients(waiting_client, client);
     waiting_client = NULL;
   } else {
+    printf("%s is waiting\n", client->nickname);
     message msg = { .type = msg_wait };
     sendto(client->sock, &msg, sizeof msg, 0, (sa) &client->addr, client->addrlen);
     waiting_client = client;
@@ -190,8 +201,9 @@ void new_client(union addr* addr, socklen_t addrlen, int sock, char* nickname) {
 void* ping(void* _) {
   const static message msg = { .type = msg_ping };
   loop {
-    sleep(10);
+    sleep(PING_INTERVAL);
     pthread_mutex_lock(&mutex);
+    printf("Pinging clients\n");
     for (int i = 0; i < MAX_CONN; i++) {
       if (clients[i].state != empty) {
         if (clients[i].responding) {
