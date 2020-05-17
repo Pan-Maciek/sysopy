@@ -78,15 +78,23 @@ void render_update() {
   render_footer();
 }
 
+int sock;
+void on_SIGINT(int _) {
+  message msg = {.type = msg_disconnect};
+  send(sock, &msg, sizeof msg, 0);
+  exit(0);
+}
+
 int main(int argc, char** argv) {
   char* nickname = state.nicknames[0] = argv[1];
-  int sock;
   if (strcmp(argv[2], "web") == 0 && argc == 5) sock = connect_web(argv[3], atoi(argv[4]));
   else if (strcmp(argv[2], "unix") == 0 && argc == 4) sock = connect_unix(argv[3], nickname);
   else {
     print("Usage [nick] [web|unix] [ip port|path]\n");
     exit(0);
   }
+  
+  signal(SIGINT, on_SIGINT);
 
   message msg = { .type = msg_connect };
   strncpy(msg.payload.nickname, nickname, sizeof msg.payload.nickname);
@@ -144,6 +152,8 @@ int main(int argc, char** argv) {
         } else if (msg.type == msg_username_taken) {
           print("This username is already taken\n");
           close(sock);
+          exit(0);
+        } else if (msg.type == msg_disconnect) {
           exit(0);
         } else if (msg.type == msg_server_full) {
           print("Server is full\n");

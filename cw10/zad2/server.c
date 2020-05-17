@@ -36,7 +36,11 @@ void delete_client(client* client) {
     client->peer = NULL;
     client->game_state = NULL;
   }
+  message msg = { .type = msg_disconnect };
+  sendto(client->sock, &msg, sizeof msg, 0, (sa) &client->addr, client->addrlen);
+  memset(&client->addr, 0, sizeof client->addr);
   client->state = empty;
+  client->sock = 0;
   client->nickname[0] = 0;
 }
 
@@ -101,7 +105,9 @@ void on_client_message(client* client, message* msg) {
     client->responding = true;
     pthread_mutex_unlock(&mutex);
   }
-  else if (msg->type == msg_move) {
+  else if (msg->type == msg_disconnect) {
+    delete_client(client);
+  } else if (msg->type == msg_move) {
     int move = msg->payload.move;
     if (msg->type != msg_move) return;
     if (client->game_state->move == client->symbol 

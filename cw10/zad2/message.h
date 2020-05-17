@@ -2,7 +2,7 @@ struct game_state { char move; char board[9]; };
 
 typedef struct message {
   enum message_type { 
-    msg_connect,
+    msg_connect, msg_disconnect,
     msg_play, msg_move,
     msg_state, msg_win,
     msg_ping, msg_username_taken,
