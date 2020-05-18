@@ -86,9 +86,10 @@ void on_SIGINT(int _) {
 }
 
 int main(int argc, char** argv) {
-  char* nickname = state.nicknames[0] = argv[1];
-  if (strcmp(argv[2], "web") == 0 && argc == 5) sock = connect_web(argv[3], atoi(argv[4]));
-  else if (strcmp(argv[2], "unix") == 0 && argc == 4) sock = connect_unix(argv[3], nickname);
+  char* nickname;
+  if (argc > 2) nickname = state.nicknames[0] = argv[1];
+  if (argc == 5 && strcmp(argv[2], "web") == 0) sock = connect_web(argv[3], atoi(argv[4]));
+  else if (argc == 4 && strcmp(argv[2], "unix") == 0) sock = connect_unix(argv[3], nickname);
   else {
     print("Usage [nick] [web|unix] [ip port|path]\n");
     exit(0);
