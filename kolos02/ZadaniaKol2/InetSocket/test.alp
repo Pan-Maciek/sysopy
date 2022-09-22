@@ -1,0 +1,153 @@
+
+module my_module
+
+export double/1
+
+let double x =
+  let add a b = a + b in
+  add x x
+
+test "doubling 2 is 4" = some_test_checker (double 2) 4
+
+-- Basic ADT with type constructors:
+type even_or_odd = Even int | Odd int
+
+-- A function from integers to our ADT:
+let even_or_odd x =
+  let rem = x % 2 in
+  match rem with
+  | 0 -> Even x
+  | _ -> Odd x
+
+
+  
+int           1
+float         1.0
+bool          true false
+atom         :atom :"quoted atom"
+
+
+(int, string, atom)  (1, "a", :ala)     
+string               "utf8 string" 
+list int             c"character list"
+list int             [1, 2, 3]          
+map atom float       #{:pi => 3.14}
+
+
+type option 'a = Some 'a | None
+
+type num = int | float
+type vec2d = Vec (num, num)
+
+let rec1 = {x=1, pi=3.14}
+let rec2 = {x="string" | rec1}
+
+{x=1, y=2.0 | rec}
+
+let get_name x =
+  match x with 
+  {name=n} -> n
+
+get_name {x=1, y=2, name="Miasto"}
+get_name {name="Maciej", age=22}
+
+pid                              pid int
+function                         fn int int -> int
+
+
+
+val add : fn int int -> int
+let add a b = a + b
+
+
+let foo x =
+  let id x = x in
+  id x
+
+
+let add a b = a + b
+let add3 = add 3
+
+add3 1
+
+let (|>) x f = f x
+let (<|>) f g = 
+  let h x = f (g x) in
+  h
+
+let reverse x = 
+  let rev [] acc = acc
+  let rev
+
+module add_and_a_test
+
+export add/2
+
+let add x y = x + y
+
+test "add 2 2 should result in 4" = test_equal (add 2 2) 4
+
+{- Test the equality of two terms, throwing an exception if they're
+    not equal.  The two terms will need to be the same type for any
+    call to this to succeed:
+  -}
+let test_equal x y =
+  match (x == y) with
+      true -> :passed
+    | false ->
+        let msg = format_msg "Not equal:  ~w and ~w" x y in
+        beam :erlang :error [msg] with _ -> :failed
+
+-- formats a failure message:
+let format_msg base x y =
+  let m = beam :io_lib :format [base, [x, y]] with msg -> msg in
+  beam :lists :flatten [m] with msg, is_chars msg -> msg
+
+let a_counting_function x =
+  receive with
+      "add" -> a_counting_function x + 1
+    | "sub" -> a_counting_function x - 1
+
+{- If a_counting_function/1 is exported from the module, the following
+    will spawn a `pid string`, that is, a "process that can receive
+    strings".  Note that this is not a valid top-level entry for a module,
+    we just want a few simple examples.
+  -}
+let my_pid = spawn a_counting_function 0
+
+match (true, false) with
+  (a, _) -> a
+
+let length my_list =
+  match my_list with
+    [] -> 0
+  | _ :: t -> 1 + (length t)
+
+
+
+let a_counting_function x =
+  receive with
+      "add" -> a_counting_function x + 1
+    | "sub" -> a_counting_function x - 1
+
+let my_pid = spawn a_counting_function 0
+
+-- send "add" to `my_pid`:
+send "add" my_pid
+
+
+type num = int | float
+type location = Location (num, num)
+type id = location | string
+type datetime = DateTime ((int, int, int), (int, int, int))
+
+type message = 
+    addStation (string, location)
+  | addValue (id, datetime, atom, float)
+  | getStationMean (id, atom)
+
+let server =
+  receive with
+    addStation (name, loc) -> ...
+  | addValue (id, date, mtype, value) -> ...
+  | getStationMean (id, atom) -> ...

@@ -1,0 +1,42 @@
+module pollution
+
+export create_monitor, add_station
+
+type num = int | float
+type location = Location (num, num)
+type date = Date ((int, int, int), (int, int, int))
+type measurement = Measurement (atom, date, float)
+type monitor = PollutionMonitor (map string location, map location (list measurement))
+type id = location | string
+
+type result 'a 'b = Ok 'a | Error 'b
+
+let create_monitor () = PollutionMonitor (#{}, #{})
+
+let is_key a b = 
+    beam :maps :is_key [a, b] with
+    | res -> res
+
+let add_station name loc state =
+    let PollutionMonitor (names, states) = state in
+    match ((is_key name names), (is_key loc states)) with
+    | (false, false) -> Ok PollutionMonitor(#{ name => loc | names }, #{ loc => [] | states })
+    | (true, _) -> Error :name
+    | (_, true) -> Error :coordinates
+
+test "add station to empty monitor" = 
+    let m0 = create_monitor () in
+    let Ok m1 = add_station "K" Location (1, 1)  m0 in
+    let PollutionMonitor (names, states) = m1 in
+    assert_equal (names, states) (#{ "K" => Location (1, 1) }, #{ Location (1, 1) => []})
+
+let assert_equal x y =
+  match (x == y) with
+      true -> :passed
+    | false ->
+        let msg = format_msg "Not equal:  ~w and ~w" x y in
+        beam :erlang :error [msg] with _ -> :failed
+
+let format_msg base x y =
+  let m = beam :io_lib :format [base, [x, y]] with msg -> msg in
+  beam :lists :flatten [m] with msg, is_chars msg -> msg
